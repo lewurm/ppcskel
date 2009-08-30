@@ -24,6 +24,8 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "video_low.h"
 #include "input.h"
 #include "console.h"
+#include "sha1.h"
+#include "hollywood.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
 
@@ -109,9 +111,9 @@ int main(void)
 			; // better ideas welcome!
 	}
 
-    print_str_noscroll(112, 112, "ohai, world!\n");
+	printf("===============================\n");
 
-	testOTP();
+	SHA1TestCases();
 
 	printf("bye, world!\n");
 
