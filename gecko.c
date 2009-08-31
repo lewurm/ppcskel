@@ -205,6 +205,7 @@ int printf(const char *fmt, ...) {
 	if (!gecko_console_enabled)
 		return 0;
 
+	udelay(100); // <- evil hack :)
 	va_list args;
 	char buffer[1024];
 	int i;

@@ -115,6 +115,21 @@ int main(void)
 
 	printf("bye, world!\n");
 
+	// enable RESET interrupt 
+	write32(0x0c003004, 1<<1);
+#define _CPU_ISR_Enable() \
+	{ register u32 _val = 0; \
+	  __asm__ __volatile__ ( \
+		"mfmsr %0\n" \
+		"ori %0,%0,0x8000\n" \
+		"mtmsr %0" \
+		: "=&r" ((_val)) : "0" ((_val)) \
+	  ); \
+	}
+	_CPU_ISR_Enable()
+
+	while(1) {}
+
 	return 0;
 }
 
