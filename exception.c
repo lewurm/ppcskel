@@ -11,11 +11,35 @@ Copyright (C) 2008		Segher Boessenkool <segher@kernel.crashing.org>
 #include "bootmii_ppc.h"
 
 #include "string.h"
+#include "irq.h"
 
 extern char exception_2200_start, exception_2200_end;
 
 void exception_handler(int exception)
 {
+	// check if the exception was actually an interrupt
+	if (exception == 0x500) {
+		u32 cookie;
+
+		_CPU_ISR_Disable(cookie);
+		printf("\nInterrupt occured ;-) Which one? -> ");
+		u32 enabled = read32(BW_PI_IRQMASK);
+		u32 flags = read32(BW_PI_IRQFLAG);
+		flags = flags & enabled;
+		if (flags & (1<<1)) { // RESET
+			write32(BW_PI_IRQFLAG, 1<<1);
+			printf("RESET :)\n");
+		}
+		if (flags & (1<<14)) { // Hollywood-PIC IRQ
+			write32(BW_PI_IRQFLAG, 1<<14);
+			write32(HW_PPCIRQFLAG, ~0); // dirty
+			printf("Hollywood-PIC :)\n");
+		}
+		_CPU_ISR_Restore(cookie);
+
+		return;
+	}
+
 	u32 *x;
 	u32 i;
 

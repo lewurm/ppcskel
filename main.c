@@ -25,6 +25,7 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "input.h"
 #include "console.h"
 #include "ohci.h"
+#include "irq.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
 
@@ -84,7 +85,7 @@ int main(void)
 	dsp_reset();
 
 	// clear interrupt mask
-	write32(0x0c003004, 0);
+	write32(BW_PI_IRQMASK, 0);
 
 	ipc_initialize();
 	ipc_slowping();
@@ -118,24 +119,19 @@ int main(void)
 	printf("bye, world!\n");
 
 	// enable OHCI0 interrupt on hollywood-pic
-#define HW_PPCIRQFLAG (0x0d800030)
-#define HW_PPCIRQMASK (0x0d800034)
 	write32(HW_PPCIRQFLAG, ~0);
 	write32(HW_PPCIRQMASK, 1<<5);
 	// enable RESET and PIC (#14) interrupts on processor interface
-	write32(0x0c003004, (1<<1) | (1<<14));
-#define _CPU_ISR_Enable() \
-	{ register u32 _val = 0; \
-	  __asm__ __volatile__ ( \
-		"mfmsr %0\n" \
-		"ori %0,%0,0x8000\n" \
-		"mtmsr %0" \
-		: "=&r" ((_val)) : "0" ((_val)) \
-	  ); \
-	}
+	write32(BW_PI_IRQFLAG, ~0);
+	write32(BW_PI_IRQMASK, (1<<1) | (1<<14));
 	_CPU_ISR_Enable()
 
-	while(1) {}
+	while(1) {
+		// just to get sure we are still in this loop
+		_CPU_ISR_Enable() // don't know why this is needed...
+		udelay(100000);
+		printf("x");
+	}
 
 	return 0;
 }
