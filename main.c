@@ -24,6 +24,7 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "video_low.h"
 #include "input.h"
 #include "console.h"
+#include "ohci.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
 
@@ -91,6 +92,7 @@ int main(void)
 	gecko_init();
     input_init();
 	init_fb(vmode);
+	ohci_init();
 
 	VIDEO_Init(vmode);
 	VIDEO_SetFrameBuffer(get_xfb());
@@ -115,8 +117,13 @@ int main(void)
 
 	printf("bye, world!\n");
 
-	// enable RESET interrupt 
-	write32(0x0c003004, 1<<1);
+	// enable OHCI0 interrupt on hollywood-pic
+#define HW_PPCIRQFLAG (0x0d800030)
+#define HW_PPCIRQMASK (0x0d800034)
+	write32(HW_PPCIRQFLAG, ~0);
+	write32(HW_PPCIRQMASK, 1<<5);
+	// enable RESET and PIC (#14) interrupts on processor interface
+	write32(0x0c003004, (1<<1) | (1<<14));
 #define _CPU_ISR_Enable() \
 	{ register u32 _val = 0; \
 	  __asm__ __volatile__ ( \
