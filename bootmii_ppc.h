@@ -45,6 +45,16 @@ static inline void write32(u32 addr, u32 x)
 	asm("stw %0,0(%1) ; eieio" : : "r"(x), "b"(0xc0000000 | addr));
 }
 
+static inline void set32(u32 addr, u32 set)
+{
+	write32(addr, read32(addr) | set);
+}
+
+static inline void clear32(u32 addr, u32 clear)
+{
+	write32(addr, read32(addr)&(~clear));
+}
+
 static inline void mask32(u32 addr, u32 clear, u32 set)
 {
 	write32(addr, (read32(addr)&(~clear)) | set);

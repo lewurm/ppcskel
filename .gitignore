@@ -1,5 +1,6 @@
 git_version.h
 *.d
+.deps/*.d
 *.bin
 *.elf
 *.map

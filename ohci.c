@@ -14,7 +14,6 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "irq.h"
 
 #define gecko_printf printf
-#define set32(address, flags) write32(address, read32(address) | flags)
 #define dma_addr(address) (u32)address
 
 
@@ -70,10 +69,7 @@ void ohci_init() {
           within 2msec else HC enters RESUME */
 
 
-       //u32 cookie = irq_kill();
-       u32 cookie;
-       _CPU_ISR_Disable(cookie);
-
+	   u32 cookie = irq_kill();
 
        /* Tell the controller where the control and bulk lists are
         * The lists are empty now. */
@@ -107,11 +103,8 @@ void ohci_init() {
        write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_INIT);
 
 
-       //irq_restore(cookie);
-       _CPU_ISR_Restore(cookie);
-
+       irq_restore(cookie);
 
        dbg_op_state();
-
 }
 
