@@ -14,7 +14,7 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "irq.h"
 
 #define gecko_printf printf
-#define dma_addr(address) (u32)address
+#define dma_addr(address) virt_to_phys(address)
 
 
 static struct ohci_hcca hcca_oh0;
