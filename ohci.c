@@ -15,7 +15,7 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 
 #define gecko_printf printf
 #define set32(address, flags) write32(address, read32(address) | flags)
-#define dma_addr(address) (u32)address
+#define dma_addr(address) virt_to_phys(address)
 
 
 static struct ohci_hcca hcca_oh0;
