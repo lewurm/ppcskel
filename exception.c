@@ -40,6 +40,12 @@ void exception_handler(int exception)
 		return;
 	}
 
+	// check if exception happened due to the decrementer
+	if (exception == 0x900) {
+		printf("\nDecrementer exception occured - who cares?\n");
+		return;
+	}
+
 	u32 *x;
 	u32 i;
 
