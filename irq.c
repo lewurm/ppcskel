@@ -31,7 +31,7 @@ void irq_initialize(void)
 
 
 	//??? -- needed?!
-	write32(HW_PPCIRQMASK+0x04, 0);
+	//write32(HW_ARMIRQFLAG, 0); // this does nothing?
 	write32(HW_PPCIRQMASK+0x20, 0);
 
 	_CPU_ISR_Enable()
