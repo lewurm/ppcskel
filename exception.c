@@ -18,12 +18,10 @@ extern char exception_2200_start, exception_2200_end;
 
 void exception_handler(int exception)
 {
+	u32 cookie = irq_kill();
 	// check if the exception was actually an external interrupt
 	if (exception == 0x500) {
-		u32 cookie = irq_kill();
 		irq_handler();
-		irq_restore(cookie);
-		//_CPU_ISR_Enable(); //wtf
 	}
 
 	// check if exception happened due to the decrementer
@@ -56,6 +54,9 @@ void exception_handler(int exception)
 		for (;;)
 			;
 	}
+
+	irq_restore(cookie);
+	_CPU_ISR_Enable(); //wtf
 }
 
 void exception_init(void)

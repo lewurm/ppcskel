@@ -19,19 +19,20 @@ Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
 
 void irq_initialize(void)
 {
-	// enable hollywood-pic for ppc
-	write32(HW_PPCIRQMASK, 0);
-	write32(HW_PPCIRQFLAG, 0xffffffff);
-
-	// enable RESET and PIC (#14) interrupts on processor interface
+	// clear flipper-pic (processor interface)
 	write32(BW_PI_IRQMASK, 0);
 	write32(BW_PI_IRQFLAG, 0xffffffff);
 
+	// clear hollywood-pic
+	write32(HW_PPCIRQMASK, 0);
+	write32(HW_PPCIRQFLAG, 0xffffffff);
+
+	printf("PPCIRQMASK: 0x%08X\n", read32(HW_PPCIRQMASK));
+
+
 	//??? -- needed?!
-	/*
 	write32(HW_PPCIRQMASK+0x04, 0);
 	write32(HW_PPCIRQMASK+0x20, 0);
-	*/
 
 	_CPU_ISR_Enable()
 }
@@ -51,11 +52,11 @@ void irq_handler(void)
 
 	flags = flags & enabled;
 
-	if (flags & (1<<1)) { //RESET
+	if (flags & (1<<BW_PI_IRQ_RESET)) { 
 		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_RESET);
-		printf("IRQ RESET\n");
+		printf("IRQ-BW RESET\n");
 	}
-	if (flags & (1<<14)) { //HW-PIC IRQ
+	if (flags & (1<<BW_PI_IRQ_HW)) { //HW-PIC IRQ
 		u32 hw_enabled = read32(HW_PPCIRQMASK);
 		u32 hw_flags = read32(HW_PPCIRQFLAG);
 
@@ -64,14 +65,6 @@ void irq_handler(void)
 		hw_flags = hw_flags & hw_enabled;
 
 		if(hw_flags & IRQF_TIMER) {
-			// done by mini already? 
-			/*
-			   if (_alarm_frequency) {
-			// currently we use the alarm timer only for lame usbgecko polling
-			gecko_timer();
-			write32(HW_ALARM, read32(HW_TIMER) + _alarm_frequency);
-			}
-			*/
 			write32(HW_PPCIRQFLAG, IRQF_TIMER);
 		}
 		if(hw_flags & IRQF_NAND) {
@@ -128,12 +121,17 @@ void irq_handler(void)
 			printf("IRQ: unknown 0x%08x\n", hw_flags);
 			write32(HW_PPCIRQFLAG, hw_flags);
 		}
-		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_HW);
-		u32 flags2 = read32(BW_PI_IRQFLAG);
-		printf("flags2: 0x%08X\n", flags2);
-	}
 
-//	flags &= 
+		printf("hw_flags1: 0x%08x\n", read32(HW_PPCIRQFLAG));
+
+		// quirk for flipper pic? TODO :/
+		write32(HW_PPCIRQMASK, 0);
+
+		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_HW);
+		printf("flags2: 0x%08X\n", read32(BW_PI_IRQFLAG));
+		
+		write32(HW_PPCIRQMASK, hw_enabled);
+	}
 }
 
 void irq_bw_enable(u32 irq)
