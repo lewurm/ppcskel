@@ -41,6 +41,21 @@
 #define BW_PI_IRQFLAG (0x0c003000)
 #define BW_PI_IRQMASK (0x0c003004)
 
+// http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.4
+#define BW_PI_IRQ_RESET 	1
+#define BW_PI_IRQ_DI 		2
+#define BW_PI_IRQ_SI 		3
+#define BW_PI_IRQ_EXI 		4
+#define BW_PI_IRQ_AI 	 	5
+#define BW_PI_IRQ_DSP 	 	6
+#define BW_PI_IRQ_MEM 	 	7
+#define BW_PI_IRQ_VI 	 	8
+#define BW_PI_IRQ_PE_TOKEN 	9
+#define BW_PI_IRQ_PE_FINISH 	10
+#define BW_PI_IRQ_CP 	 	11
+#define BW_PI_IRQ_DEBUG 	12
+#define BW_PI_IRQ_HSP 	 	13
+#define BW_PI_IRQ_HW 		14 //hollywood pic
 
 /* stolen from libogc - gc/ogc/machine/processor.h */
 #define _CPU_ISR_Enable() \
@@ -85,8 +100,10 @@ void irq_shutdown(void);
 
 void irq_handler(void);
 
-void irq_enable(u32 irq);
-void irq_disable(u32 irq);
+void irq_bw_enable(u32 irq);
+void irq_bw_disable(u32 irq);
+void irq_hw_enable(u32 irq);
+void irq_hw_disable(u32 irq);
 
 u32 irq_kill(void);
 void irq_restore(u32 cookie);
@@ -99,7 +116,6 @@ static inline void irq_wait(void)
 }
 */
 
-//void irq_set_alarm(u32 ms, u8 enable);
 #endif
 
 #else

@@ -85,7 +85,9 @@ int main(void)
 	dsp_reset();
 
 	irq_initialize();
-	irq_enable(IRQ_OHCI0);
+	irq_bw_enable(BW_PI_IRQ_RESET);
+	irq_bw_enable(BW_PI_IRQ_HW); //hollywood pic
+	irq_hw_enable(IRQ_OHCI0);
 	
 	ipc_initialize();
 	ipc_slowping();
@@ -112,17 +114,17 @@ int main(void)
 			; // better ideas welcome!
 	}
 
+	/*
     print_str_noscroll(112, 112, "ohai, world!\n");
-
 	testOTP();
-
 	printf("bye, world!\n");
+	*/
 
 	while(1) {
 		// just to get sure we are still in this loop
-		//wtf? _CPU_ISR_Enable() // don't know why this is needed...
-		udelay(100000);
-		printf("x");
+		//_CPU_ISR_Enable() // don't know why this is needed...
+		//udelay(100000);
+		//printf("x");
 	}
 
 	return 0;
