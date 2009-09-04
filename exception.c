@@ -56,7 +56,6 @@ void exception_handler(int exception)
 	}
 
 	irq_restore(cookie);
-	_CPU_ISR_Enable(); //wtf
 }
 
 void exception_init(void)

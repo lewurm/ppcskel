@@ -55,36 +55,6 @@ void ohci_init() {
        /* enable interrupts of both usb host controllers */
        set32(EHCI_CTL, EHCI_CTL_OH0INTE | EHCI_CTL_OH1INTE | 0xe0000);
 
-
-	
-	   u32 temp = 0;
-	   u32 hcctrl = read32(OHCI0_HC_CONTROL);
-	   switch(hcctrl & OHCI_CTRL_HCFS) {
-		   case OHCI_USB_OPER:
-			   temp = 0;
-			   break;
-		   case OHCI_USB_SUSPEND:
-		   case OHCI_USB_RESUME:
-			   hcctrl &= OHCI_CTRL_RWC;
-			   hcctrl |= OHCI_USB_RESUME;
-			   temp = 10;
-			   break;
-		   case OHCI_USB_RESET:
-			   hcctrl &= OHCI_CTRL_RWC;
-			   hcctrl |= OHCI_USB_RESET;
-			   temp = 50;
-			   break;
-	   }
-	   write32(OHCI0_HC_CONTROL, hcctrl);
-	   (void) read32(OHCI0_HC_CONTROL);
-	   udelay(temp*1000);
-
-	   memset(&hcca_oh0, 0, sizeof(struct ohci_hcca));
-
-
-       dbg_op_state();
-
-
        /* reset HC */
        write32(OHCI0_HC_COMMAND_STATUS, OHCI_HCR);
 
@@ -101,7 +71,6 @@ void ohci_init() {
        /* disable interrupts; 2ms timelimit here! 
           now we're in the SUSPEND state ... must go OPERATIONAL
           within 2msec else HC enters RESUME */
-
 
 	   u32 cookie = irq_kill();
 
@@ -127,7 +96,7 @@ void ohci_init() {
        }
        
        /* start HC operations */
-       write32(OHCI0_HC_CONTROL, (read32(OHCI0_HC_CONTROL) & OHCI_CTRL_RWC) | OHCI_CONTROL_INIT | OHCI_USB_OPER);
+       write32(OHCI0_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
 
        /* wake on ConnectStatusChange, matching external hubs */
        set32(OHCI0_HC_RH_STATUS, RH_HS_DRWE);
@@ -135,7 +104,6 @@ void ohci_init() {
        /* Choose the interrupts we care about now, others later on demand */
        write32(OHCI0_HC_INT_STATUS, ~0);
        write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_INIT);
-
 
        irq_restore(cookie);
 

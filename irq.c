@@ -157,5 +157,6 @@ u32 irq_kill() {
 
 void irq_restore(u32 cookie) {
 	_CPU_ISR_Restore(cookie);
+	_CPU_ISR_Enable(); //wtf :/
 }
 
