@@ -12,6 +12,7 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "bootmii_ppc.h"
 #include "ohci.h"
 #include "irq.h"
+#include "string.h"
 
 #define gecko_printf printf
 #define dma_addr(address) virt_to_phys(address)
@@ -39,14 +40,6 @@ static void dbg_op_state() {
 void ohci_init() {
        gecko_printf("ohci-- init\n");
        dbg_op_state();
-       /*
-       u32 i = 0;
-       for(; i <= 0x200; i+=4) {
-               gecko_printf("0x0d050000 + %X: %X\n", i, read32(0x0d050000+i));
-               udelay(10000); //'cause usb gecko is lame
-       }
-       * see output in ohci.default
-       */
 
        /* disable hc interrupts */
        set32(OHCI0_HC_INT_DISABLE, OHCI_INTR_MIE);
@@ -62,8 +55,38 @@ void ohci_init() {
        /* enable interrupts of both usb host controllers */
        set32(EHCI_CTL, EHCI_CTL_OH0INTE | EHCI_CTL_OH1INTE | 0xe0000);
 
+
+	
+	   u32 temp = 0;
+	   u32 hcctrl = read32(OHCI0_HC_CONTROL);
+	   switch(hcctrl & OHCI_CTRL_HCFS) {
+		   case OHCI_USB_OPER:
+			   temp = 0;
+			   break;
+		   case OHCI_USB_SUSPEND:
+		   case OHCI_USB_RESUME:
+			   hcctrl &= OHCI_CTRL_RWC;
+			   hcctrl |= OHCI_USB_RESUME;
+			   temp = 10;
+			   break;
+		   case OHCI_USB_RESET:
+			   hcctrl &= OHCI_CTRL_RWC;
+			   hcctrl |= OHCI_USB_RESET;
+			   temp = 50;
+			   break;
+	   }
+	   write32(OHCI0_HC_CONTROL, hcctrl);
+	   (void) read32(OHCI0_HC_CONTROL);
+	   udelay(temp*1000);
+
+	   memset(&hcca_oh0, 0, sizeof(struct ohci_hcca));
+
+
+       dbg_op_state();
+
+
        /* reset HC */
-       set32(OHCI0_HC_COMMAND_STATUS, OHCI_HCR);
+       write32(OHCI0_HC_COMMAND_STATUS, OHCI_HCR);
 
        /* wait max. 30us */
        u32 ts = 30;
@@ -93,8 +116,7 @@ void ohci_init() {
        /* set periodicstart */
 #define FIT (1<<31)
        u32 fmInterval = read32(OHCI0_HC_FM_INTERVAL) &0x3fff;
-	printf("OHCI0_HC_FMINTERVAL: %08X OCHI0_HC_FMINTERVAL&0x3fff: %08X\n", read32(OHCI0_HC_FM_INTERVAL), fmInterval);
-       u32 fit = read32(OHCI0_HC_FM_INTERVAL) & FIT;
+	   u32 fit = read32(OHCI0_HC_FM_INTERVAL) & FIT;
 
        write32(OHCI0_HC_FM_INTERVAL, fmint | (fit ^ FIT));
        write32(OHCI0_HC_PERIODIC_START, ((9*fmInterval)/10)&0x3fff);
@@ -105,7 +127,7 @@ void ohci_init() {
        }
        
        /* start HC operations */
-       set32(OHCI0_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
+       write32(OHCI0_HC_CONTROL, (read32(OHCI0_HC_CONTROL) & OHCI_CTRL_RWC) | OHCI_CONTROL_INIT | OHCI_USB_OPER);
 
        /* wake on ConnectStatusChange, matching external hubs */
        set32(OHCI0_HC_RH_STATUS, RH_HS_DRWE);

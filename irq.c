@@ -54,8 +54,6 @@ void irq_handler(void)
 {
 	u32 enabled = read32(BW_PI_IRQMASK);
 	u32 flags = read32(BW_PI_IRQFLAG);
-	printf( "========================\n"
-			"flags1: 0x%08X\n", flags);
 
 	flags = flags & enabled;
 
@@ -67,7 +65,7 @@ void irq_handler(void)
 		u32 hw_enabled = read32(HW_PPCIRQMASK);
 		u32 hw_flags = read32(HW_PPCIRQFLAG);
 
-		printf("In IRQ handler: 0x%08x 0x%08x 0x%08x\n", hw_enabled, hw_flags, hw_flags & hw_enabled);
+		//printf("In IRQ handler: 0x%08x 0x%08x 0x%08x\n", hw_enabled, hw_flags, hw_flags & hw_enabled);
 
 		hw_flags = hw_flags & hw_enabled;
 
@@ -117,7 +115,6 @@ void irq_handler(void)
 			write32(HW_PPCIRQFLAG, IRQF_OHCI0);
 		}
 		if (hw_flags & IRQF_OHCI1) {
-			printf("IRQ: OHCI1\n");
 			write32(HW_PPCIRQFLAG, IRQF_OHCI1);
 			//TODO: ohci1_irq();
 		}
@@ -128,12 +125,9 @@ void irq_handler(void)
 			write32(HW_PPCIRQFLAG, hw_flags);
 		}
 
-		printf("hw_flags1: 0x%08x\n", read32(HW_PPCIRQFLAG));
-
 		// not necessary here, but "cleaner"?
 		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_HW);
 	}
-	printf("flags2: 0x%08X\n", read32(BW_PI_IRQFLAG));
 }
 
 void irq_bw_enable(u32 irq)
