@@ -48,6 +48,17 @@ void ohci_init() {
        * see output in ohci.default
        */
 
+       /* disable hc interrupts */
+       set32(OHCI0_HC_INT_DISABLE, OHCI_INTR_MIE);
+
+       /* save fmInterval and calculate FSMPS */
+#define FSMP(fi) (0x7fff & ((6 * ((fi) - 210)) / 7))
+#define FI 0x2edf /* 12000 bits per frame (-1) */
+       u32 fmint = read32(OHCI0_HC_FM_INTERVAL) & 0x3fff;
+       if(fmint != FI)
+	       gecko_printf("ohci-- fminterval delta: %d\n", fmint - FI);
+       fmint |= FSMP (fmint) << 16;
+
        /* enable interrupts of both usb host controllers */
        set32(EHCI_CTL, EHCI_CTL_OH0INTE | EHCI_CTL_OH1INTE | 0xe0000);
 
@@ -82,9 +93,10 @@ void ohci_init() {
        /* set periodicstart */
 #define FIT (1<<31)
        u32 fmInterval = read32(OHCI0_HC_FM_INTERVAL) &0x3fff;
+	printf("OHCI0_HC_FMINTERVAL: %08X OCHI0_HC_FMINTERVAL&0x3fff: %08X\n", read32(OHCI0_HC_FM_INTERVAL), fmInterval);
        u32 fit = read32(OHCI0_HC_FM_INTERVAL) & FIT;
 
-       write32(OHCI0_HC_FM_INTERVAL, read32(OHCI0_HC_FM_INTERVAL) | (fit ^ FIT));
+       write32(OHCI0_HC_FM_INTERVAL, fmint | (fit ^ FIT));
        write32(OHCI0_HC_PERIODIC_START, ((9*fmInterval)/10)&0x3fff);
 
        /* testing bla */
