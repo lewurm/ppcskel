@@ -1,5 +1,5 @@
 /*
-       mini - a Free Software replacement for the Nintendo/BroadOn IOS.
+       ppcskel - a Free Software replacement for the Nintendo/BroadOn bootloader.
        ohci hardware support
 
 Copyright (C) 2009     Bernhard Urban <lewurm@gmx.net>
@@ -10,35 +10,32 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 */
 
 #include "bootmii_ppc.h"
+#include "hollywood.h"
 #include "ohci.h"
 #include "irq.h"
 #include "string.h"
-
-#define gecko_printf printf
-#define dma_addr(address) virt_to_phys(address)
-
 
 static struct ohci_hcca hcca_oh0;
 
 static void dbg_op_state() {
        switch (read32(OHCI0_HC_CONTROL) & OHCI_CTRL_HCFS) {
                case OHCI_USB_SUSPEND:
-                       gecko_printf("ohci-- OHCI_USB_SUSPEND\n");
+                       printf("ohci-- OHCI_USB_SUSPEND\n");
                        break;
                case OHCI_USB_RESET:
-                       gecko_printf("ohci-- OHCI_USB_RESET\n");
+                       printf("ohci-- OHCI_USB_RESET\n");
                        break;
                case OHCI_USB_OPER:
-                       gecko_printf("ohci-- OHCI_USB_OPER\n");
+                       printf("ohci-- OHCI_USB_OPER\n");
                        break;
                case OHCI_USB_RESUME:
-                       gecko_printf("ohci-- OHCI_USB_RESUME\n");
+                       printf("ohci-- OHCI_USB_RESUME\n");
                        break;
        }
 }
 
 void ohci_init() {
-       gecko_printf("ohci-- init\n");
+       printf("ohci-- init\n");
        dbg_op_state();
 
        /* disable hc interrupts */
@@ -49,7 +46,7 @@ void ohci_init() {
 #define FI 0x2edf /* 12000 bits per frame (-1) */
        u32 fmint = read32(OHCI0_HC_FM_INTERVAL) & 0x3fff;
        if(fmint != FI)
-	       gecko_printf("ohci-- fminterval delta: %d\n", fmint - FI);
+	       printf("ohci-- fminterval delta: %d\n", fmint - FI);
        fmint |= FSMP (fmint) << 16;
 
        /* enable interrupts of both usb host controllers */
@@ -62,7 +59,7 @@ void ohci_init() {
        u32 ts = 30;
        while ((read32(OHCI0_HC_COMMAND_STATUS) & OHCI_HCR) != 0) {
                if(--ts == 0) {
-                       gecko_printf("ohci-- FAILED");
+                       printf("ohci-- FAILED");
                        return;
                }
                udelay(1);
@@ -80,7 +77,8 @@ void ohci_init() {
        write32(OHCI0_HC_BULK_HEAD_ED, 0);
 
        /* set hcca adress */
-       write32(OHCI0_HC_HCCA, dma_addr(&hcca_oh0));
+	   sync_after_write(&hcca_oh0, 256);
+       write32(OHCI0_HC_HCCA, virt_to_phys(&hcca_oh0));
 
        /* set periodicstart */
 #define FIT (1<<31)
@@ -92,7 +90,7 @@ void ohci_init() {
 
        /* testing bla */
        if ((read32(OHCI0_HC_FM_INTERVAL) & 0x3fff0000) == 0 || !read32(OHCI0_HC_PERIODIC_START)) {
-               gecko_printf("ohci-- w00t, fail!! see ohci-hcd.c:669\n");
+               printf("ohci-- w00t, fail!! see ohci-hcd.c:669\n");
        }
        
        /* start HC operations */
@@ -111,8 +109,7 @@ void ohci_init() {
 }
 
 void ohci0_irq() {
-	gecko_printf("ohci_irq\n");
 	write32(OHCI0_HC_INT_STATUS, ~0);
+	printf("ohci_irq\n");
 }
-
 

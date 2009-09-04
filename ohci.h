@@ -1,78 +1,18 @@
+/*
+       ppcskel - a Free Software replacement for the Nintendo/BroadOn bootloader.
+       ohci hardware support
+
+Copyright (C) 2009     Bernhard Urban <lewurm@gmx.net>
+Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
+
+# This code is licensed to you under the terms of the GNU GPL, version 2;
+# see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+*/
+
 #ifndef __OHCI_H__
 #define __OHCI_H__
 
 #include "types.h"
-
-/* OHCI0 Registers */
-
-#define        OHCI0_REG_BASE          0xd050000
-
-#define        OHCI0_HC_REVISION                       (OHCI0_REG_BASE + 0x00)
-#define        OHCI0_HC_CONTROL                        (OHCI0_REG_BASE + 0x04)
-#define        OHCI0_HC_COMMAND_STATUS         (OHCI0_REG_BASE + 0x08)
-#define        OHCI0_HC_INT_STATUS             (OHCI0_REG_BASE + 0x0C)
-
-#define        OHCI0_HC_INT_ENABLE             (OHCI0_REG_BASE + 0x10)
-#define        OHCI0_HC_INT_DISABLE            (OHCI0_REG_BASE + 0x14)
-#define        OHCI0_HC_HCCA                           (OHCI0_REG_BASE + 0x18)
-#define        OHCI0_HC_PERIOD_CURRENT_ED      (OHCI0_REG_BASE + 0x1C)
-
-#define        OHCI0_HC_CTRL_HEAD_ED           (OHCI0_REG_BASE + 0x20)
-#define        OHCI0_HC_CTRL_CURRENT_ED        (OHCI0_REG_BASE + 0x24)
-#define        OHCI0_HC_BULK_HEAD_ED           (OHCI0_REG_BASE + 0x28)
-#define        OHCI0_HC_BULK_CURRENT_ED        (OHCI0_REG_BASE + 0x2C)
-
-#define        OHCI0_HC_DONE_HEAD                      (OHCI0_REG_BASE + 0x30)
-#define        OHCI0_HC_FM_INTERVAL            (OHCI0_REG_BASE + 0x34)
-#define        OHCI0_HC_FM_REMAINING           (OHCI0_REG_BASE + 0x38)
-#define        OHCI0_HC_FM_NUMBER                      (OHCI0_REG_BASE + 0x3C)
-
-#define        OHCI0_HC_PERIODIC_START         (OHCI0_REG_BASE + 0x40)
-#define        OHCI0_HC_LS_THRESHOLD           (OHCI0_REG_BASE + 0x44)
-#define        OHCI0_HC_RH_DESCRIPTOR_A        (OHCI0_REG_BASE + 0x48)
-#define        OHCI0_HC_RH_DESCRIPTOR_B        (OHCI0_REG_BASE + 0x4C)
-
-#define        OHCI0_HC_RH_STATUS                      (OHCI0_REG_BASE + 0x50)
-
-
-/* OHCI1 Registers */
-
-#define        OHCI1_REG_BASE          0xd060000
-
-#define        OHCI1_HC_REVISION                       (OHCI1_REG_BASE + 0x00)
-#define        OHCI1_HC_CONTROL                        (OHCI1_REG_BASE + 0x04)
-#define        OHCI1_HC_COMMAND_STATUS         (OHCI1_REG_BASE + 0x08)
-#define        OHCI1_HC_INT_STATUS             (OHCI1_REG_BASE + 0x0C)
-
-#define        OHCI1_HC_INT_ENABLE             (OHCI1_REG_BASE + 0x10)
-#define        OHCI1_HC_INT_DISABLE            (OHCI1_REG_BASE + 0x14)
-#define        OHCI1_HC_HCCA                           (OHCI1_REG_BASE + 0x18)
-#define        OHCI1_HC_PERIOD_CURRENT_ED      (OHCI1_REG_BASE + 0x1C)
-
-#define        OHCI1_HC_CTRL_HEAD_ED           (OHCI1_REG_BASE + 0x20)
-#define        OHCI1_HC_CTRL_CURRENT_ED        (OHCI1_REG_BASE + 0x24)
-#define        OHCI1_HC_BULK_HEAD_ED           (OHCI1_REG_BASE + 0x28)
-#define        OHCI1_HC_BULK_CURRENT_ED        (OHCI1_REG_BASE + 0x2C)
-
-#define        OHCI1_HC_DONE_HEAD                      (OHCI1_REG_BASE + 0x30)
-#define        OHCI1_HC_FM_INTERVAL            (OHCI1_REG_BASE + 0x34)
-#define        OHCI1_HC_FM_REMAINING           (OHCI1_REG_BASE + 0x38)
-#define        OHCI1_HC_FM_NUMBER                      (OHCI1_REG_BASE + 0x3C)
-
-#define        OHCI1_HC_PERIODIC_START         (OHCI1_REG_BASE + 0x40)
-#define        OHCI1_HC_LS_THRESHOLD           (OHCI1_REG_BASE + 0x44)
-#define        OHCI1_HC_RH_DESCRIPTOR_A        (OHCI1_REG_BASE + 0x48)
-#define        OHCI1_HC_RH_DESCRIPTOR_B        (OHCI1_REG_BASE + 0x4C)
-
-#define        OHCI1_HC_RH_STATUS                      (OHCI1_REG_BASE + 0x50)
-
-/* EHCI Registers */
-#define        EHCI_REG_BASE           0xd040000
-
-/* stolen from mikep2 patched linux kernel: drivers/usb/host/ohci-mipc.c */
-#define        EHCI_CTL                        (EHCI_REG_BASE + 0xCC)
-#define        EHCI_CTL_OH0INTE                (1<<11) /* oh0 interrupt enable */
-#define        EHCI_CTL_OH1INTE                (1<<12) /* oh1 interrupt enable */
 
 /* stolen from drivers/usb/host/ohci.h (linux-kernel) :) */
 

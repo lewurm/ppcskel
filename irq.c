@@ -115,8 +115,8 @@ void irq_handler(void)
 			write32(HW_PPCIRQFLAG, IRQF_OHCI0);
 		}
 		if (hw_flags & IRQF_OHCI1) {
-			write32(HW_PPCIRQFLAG, IRQF_OHCI1);
 			//TODO: ohci1_irq();
+			write32(HW_PPCIRQFLAG, IRQF_OHCI1);
 		}
 
 		hw_flags &= ~IRQF_ALL;
