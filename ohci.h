@@ -197,5 +197,6 @@ struct ohci_hcca {
 } ALIGNED(256);
 
 void ohci_init(void);
+void ohci0_irq(void);
 
 #endif

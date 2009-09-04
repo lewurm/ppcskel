@@ -84,6 +84,11 @@ int main(void)
 	exception_init();
 	dsp_reset();
 
+	irq_initialize();
+	irq_bw_enable(BW_PI_IRQ_RESET);
+	irq_bw_enable(BW_PI_IRQ_HW); //hollywood pic
+	irq_hw_enable(IRQ_OHCI0);
+
 	ipc_initialize();
 	ipc_slowping();
 
@@ -94,11 +99,6 @@ int main(void)
 	VIDEO_Init(vmode);
 	VIDEO_SetFrameBuffer(get_xfb());
 	VISetupEncoder();
-
-	irq_initialize();
-	irq_bw_enable(BW_PI_IRQ_RESET);
-	irq_bw_enable(BW_PI_IRQ_HW); //hollywood pic
-	irq_hw_enable(IRQ_OHCI0);
 
 	ohci_init();
 

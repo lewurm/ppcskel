@@ -14,8 +14,7 @@ Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
 #include "hollywood.h"
 #include "ipc.h"
 #include "bootmii_ppc.h"
-//debug only
-#include "printf.h"
+#include "ohci.h"
 
 void irq_initialize(void)
 {
@@ -27,12 +26,19 @@ void irq_initialize(void)
 	write32(HW_PPCIRQMASK, 0);
 	write32(HW_PPCIRQFLAG, 0xffffffff);
 
-	printf("PPCIRQMASK: 0x%08X\n", read32(HW_PPCIRQMASK));
-
-
-	//??? -- needed?!
-	//write32(HW_ARMIRQFLAG, 0); // this does nothing?
-	write32(HW_PPCIRQMASK+0x20, 0);
+	/* ??? -- needed?!
+	 * in mini they do
+	 *
+	 * write32(HW_ARMIRQMASK+0x04, 0);
+	 * write32(HW_ARMIRQMASK+0x20, 0);
+	 *
+	 *
+	 * may it's here following; on the other 
+	 * hand it's already done by mini...
+	 *
+	 * write32(HW_PPCIRQMASK+0x04+0x08, 0);
+	 * write32(HW_PPCIRQMASK+0x20+0x08, 0);
+	 */
 
 	_CPU_ISR_Enable()
 }
@@ -48,7 +54,8 @@ void irq_handler(void)
 {
 	u32 enabled = read32(BW_PI_IRQMASK);
 	u32 flags = read32(BW_PI_IRQFLAG);
-	printf("flags1: 0x%08X\n", flags);
+	printf( "========================\n"
+			"flags1: 0x%08X\n", flags);
 
 	flags = flags & enabled;
 
@@ -106,9 +113,8 @@ void irq_handler(void)
 			//sdhc_irq();
 		}
 		if (hw_flags & IRQF_OHCI0) {
-			printf("IRQ: OHCI0\n");
+			ohci0_irq();
 			write32(HW_PPCIRQFLAG, IRQF_OHCI0);
-			//TODO: ohci0_irq();
 		}
 		if (hw_flags & IRQF_OHCI1) {
 			printf("IRQ: OHCI1\n");
@@ -124,14 +130,10 @@ void irq_handler(void)
 
 		printf("hw_flags1: 0x%08x\n", read32(HW_PPCIRQFLAG));
 
-		// quirk for flipper pic? TODO :/
-		write32(HW_PPCIRQMASK, 0);
-
+		// not necessary here, but "cleaner"?
 		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_HW);
-		printf("flags2: 0x%08X\n", read32(BW_PI_IRQFLAG));
-		
-		write32(HW_PPCIRQMASK, hw_enabled);
 	}
+	printf("flags2: 0x%08X\n", read32(BW_PI_IRQFLAG));
 }
 
 void irq_bw_enable(u32 irq)

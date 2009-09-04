@@ -108,3 +108,9 @@ void ohci_init() {
        dbg_op_state();
 }
 
+void ohci0_irq() {
+	gecko_printf("ohci_irq\n");
+	write32(OHCI0_HC_INT_STATUS, ~0);
+}
+
+
