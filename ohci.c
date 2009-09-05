@@ -112,7 +112,55 @@ void ohci_init()
 
 void ohci0_irq() 
 {
-	write32(OHCI0_HC_INT_STATUS, ~0);
-	printf("ohci_irq\n");
+	/* read interrupt status */
+	u32 flags = read32(OHCI0_HC_INT_STATUS);
+
+	/* when all bits are set to 1 some problem occured */
+	if (flags == 0xffffffff) {
+		printf("ohci-- Houston, we have a serious problem! :(\n");
+		return;
+	}
+
+	/* only care about interrupts that are enabled */
+	flags &= read32(OHCI0_HC_INT_ENABLE);
+
+	/* nothing to do? */
+	if (flags == 0)
+		return;
+
+	printf("OHCI Interrupt occured: ");
+	/* UnrecoverableError */
+	if (flags & OHCI_INTR_UE) {
+		printf("UnrecoverableError\n");
+		/* TODO: well, I don't know... nothing,
+		 *       because it won't happen anyway? ;-) */
+	}
+
+	/* RootHubStatusChange */
+	if (flags & OHCI_INTR_RHSC) {
+		printf("RootHubStatusChange\n");
+		/* TODO: set some next_statechange variable... */
+		write32(OHCI0_HC_INT_STATUS, OHCI_INTR_RD | OHCI_INTR_RHSC);
+	}
+	/* ResumeDetected */
+	else if (flags & OHCI_INTR_RD) {
+		printf("ResumeDetected\n");
+		write32(OHCI0_HC_INT_STATUS, OHCI_INTR_RD);
+		/* TODO: figure out what the linux kernel does here... */
+	}
+
+	/* WritebackDoneHead */
+	if (flags & OHCI_INTR_WDH) {
+		printf("WritebackDoneHead\n");
+		/* TODO: figure out what the linux kernel does here... */
+	}
+
+	/* TODO: handle any pending URB/ED unlinks... */
+
+#define HC_IS_RUNNING() 1 /* dirty, i know... just a temporary solution */
+	if (HC_IS_RUNNING()) {
+		write32(OHCI0_HC_INT_STATUS, flags);
+		write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_MIE);
+	}
 }
 
