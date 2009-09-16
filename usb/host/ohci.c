@@ -13,10 +13,36 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "../../hollywood.h"
 #include "../../irq.h"
 #include "../../string.h"
+#include "../../malloc.h"
 #include "ohci.h"
 #include "host.h"
 
 static struct ohci_hcca hcca_oh0;
+static struct endpoint_descriptor *dummyconfig;
+
+static struct endpoint_descriptor *allocate_endpoint()
+{
+	struct endpoint_descriptor *ep;
+	ep = (struct endpoint_descriptor *)calloc(sizeof(struct endpoint_descriptor), 16);
+	ep->flags = OHCI_ENDPOINT_GENERAL_FORMAT;
+	ep->headp = ep->tailp = ep->nexted = 0;
+	return ep;
+}
+
+static struct general_td *allocate_general_td(size_t bsize)
+{
+	struct general_td *td;
+	td = (struct general_td *)calloc(sizeof(struct general_td), 16);
+	td->flags = 0;
+	td->nexttd = 0;
+	if(bsize == 0) {
+		td->cbp = td->be = 0;
+	} else {
+		td->cbp = (u32)malloc(bsize);
+		td->be = td->cbp + bsize - 1;
+	}
+	return td;
+}
 
 static void dbg_op_state() 
 {
@@ -41,6 +67,45 @@ static void dbg_op_state()
  * Enqueue a transfer descriptor.
  */
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
+	printf("===========================\ndone head (vor sync): 0x%08X\n", hcca_oh0.done_head);
+	sync_before_read(&hcca_oh0, 256);
+	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
+
+	struct general_td *tmptd = allocate_general_td(sizeof(td->buffer));
+	(void) memcpy((void*) tmptd->cbp, td->buffer, sizeof(td->buffer));
+
+	printf("tmptd hexump (before):\n");
+	hexdump((void*) tmptd, sizeof(tmptd));
+	printf("tmptd-cbp hexump (before):\n");
+	hexdump((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+
+	sync_after_write((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+	sync_after_write(tmptd, sizeof(tmptd));
+
+	dummyconfig->headp = virt_to_phys(tmptd);
+	sync_after_write(dummyconfig, 64);
+
+	printf("+++++++++++++++++++++++++++++\n");
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+
+	sync_before_read(tmptd, sizeof(tmptd));
+	printf("tmptd hexump (after):\n");
+	hexdump((void*) tmptd, sizeof(tmptd));
+
+	sync_before_read((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+	printf("tmptd-cbp hexump (after):\n");
+	hexdump((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+
+	printf("done head (vor sync): 0x%08X\n", hcca_oh0.done_head);
+	sync_before_read(&hcca_oh0, 256);
+	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
 	return 0;
 }
 
@@ -53,6 +118,7 @@ u8 hcdi_dequeue(usb_transfer_descriptor *td) {
 
 void hcdi_init() 
 {
+	dummyconfig = allocate_endpoint();
 	printf("ohci-- init\n");
 	dbg_op_state();
 
@@ -91,7 +157,8 @@ void hcdi_init()
 
 	/* Tell the controller where the control and bulk lists are
 	 * The lists are empty now. */
-	write32(OHCI0_HC_CTRL_HEAD_ED, 0);
+	sync_after_write(dummyconfig, 64);
+	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
 	write32(OHCI0_HC_BULK_HEAD_ED, 0);
 
 	/* set hcca adress */

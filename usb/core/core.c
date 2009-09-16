@@ -107,7 +107,10 @@ usb_device *usb_add_device()
 	 * GET Descriptor Request, when device address = 0
 	 */
 	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 64, buf, 8, 0);
+	printf("===========\nafter usb control msg:\n");
+	hexdump(buf, sizeof(buf));
 
+#if 0
 	dev->bMaxPacketSize0 = (u8) buf[7] ? (u8) buf[7] : 1; //dirty?	/* setup real ep0 fifo size */
 	devdescr_size = (u8) buf[0];	/* save real length of device descriptor */
 
@@ -155,6 +158,7 @@ usb_device *usb_add_device()
 	list_add_tail(core.devices, tmp);
 
 	usb_probe_driver();
+#endif
 
 	return dev;
 }

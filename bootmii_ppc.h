@@ -118,6 +118,7 @@ void exception_init(void);
 
 void gecko_init(void);
 int printf(const char *fmt, ...);
+void hexdump(void *d, int len);
 
 
 // Debug: blink the tray led.
