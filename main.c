@@ -121,6 +121,8 @@ int main(void)
 	printf("bye, world!\n");
 	*/
 
+	(void) usb_add_device();
+
 	while(1) {
 		// just to get sure we are still in this loop
 		//_CPU_ISR_Enable() // don't know why this is needed...

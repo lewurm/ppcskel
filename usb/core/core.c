@@ -39,6 +39,7 @@
 #include "../usbspec/usb11spec.h"
 #include "../lib/list.h"
 #include "../../malloc.h"
+#include "../../bootmii_ppc.h" //printf
 
 /**
  * Initialize USB stack.
@@ -107,7 +108,7 @@ usb_device *usb_add_device()
    */
   usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 64, buf, 8, 0);
 
-  dev->bMaxPacketSize0 = (u8) buf[7];   /* setup real ep0 fifo size */
+  dev->bMaxPacketSize0 = (u8) buf[7] ? (u8) buf[7] : 1; //dirty?  /* setup real ep0 fifo size */
   devdescr_size = (u8) buf[0];  /* save real length of device descriptor */
 
   /* define new adress */
@@ -125,6 +126,24 @@ usb_device *usb_add_device()
   dev->idVendor = (u16) (buf[9] << 8) | (buf[8]);
   dev->idProduct = (u16) (buf[11] << 8) | (buf[10]);
   dev->bcdDevice = (u16) (buf[13] << 8) | (buf[12]);
+
+	printf(	"bDeviceClass 0x%02X\n"
+			"bDeviceSubClass 0x%02X\n"
+			"bDeviceProtocoll 0x%02X\n"
+			"idVendor 0x%04X\n"
+			"idProduct 0x%04X\n"
+			"bcdDevice 0x%04X\n", dev->bDeviceClass, 
+			dev->bDeviceSubClass, dev->bDeviceProtocoll,
+			dev->idVendor, dev->idProduct, dev->bcdDevice);
+	/* for lewurms keyboard it should be:
+	 * bDeviceClass 		0
+	 * bDeviceSubClass 		0
+	 * bDeviceClass 		0
+	 * idVendor           0x049f
+	 * idProduct          0x000e
+	 * bcdDevice            1.00
+	 */
+
 
   // string descriptoren werden nicht im arbeitsspeicher gehalten -> on demand mit 
   // entprechenden funktionen
@@ -215,7 +234,7 @@ u8 usb_remove_irp(usb_irp * irp)
  * In the usbstack they are transported with the
  * usb_transfer_descriptor data structure.
  */
-u16 usb_submit_irp(usb_irp * irp)
+u16 usb_submit_irp(usb_irp *irp)
 {
   usb_transfer_descriptor *td;
   u8 runloop = 1;
@@ -315,8 +334,6 @@ u16 usb_submit_irp(usb_irp * irp)
     }
 
 
-
-
       /***************** Status Stage ***********************/
     /* Zero packet for end */
     td = usb_create_transfer_descriptor(irp);
@@ -410,3 +427,4 @@ usb_transfer_descriptor *usb_create_transfer_descriptor(usb_irp * irp)
 
   return td;
 }
+

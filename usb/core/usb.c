@@ -135,7 +135,7 @@ u8 usb_reset(usb_device *dev)
  */
 u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length,char *buf, u16 size, u16 timeout)
 {
-  usb_irp * irp = (usb_irp*)malloc(sizeof(usb_irp));
+  usb_irp *irp = (usb_irp*)malloc(sizeof(usb_irp));
   irp->dev = dev;
   //irp->devaddress = dev->address;
   irp->endpoint = 0;
