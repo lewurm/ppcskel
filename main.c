@@ -24,8 +24,8 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "video_low.h"
 #include "input.h"
 #include "console.h"
-#include "ohci.h"
 #include "irq.h"
+#include "usb/core/core.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
 
@@ -100,7 +100,7 @@ int main(void)
 	VIDEO_SetFrameBuffer(get_xfb());
 	VISetupEncoder();
 
-	ohci_init();
+	usb_init();
 
 	u32 version = ipc_getvers();
 	u16 mini_version_major = version >> 16 & 0xFFFF;

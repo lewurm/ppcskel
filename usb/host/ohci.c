@@ -9,11 +9,12 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 */
 
-#include "bootmii_ppc.h"
-#include "hollywood.h"
+#include "../../bootmii_ppc.h"
+#include "../../hollywood.h"
+#include "../../irq.h"
+#include "../../string.h"
 #include "ohci.h"
-#include "irq.h"
-#include "string.h"
+#include "host.h"
 
 static struct ohci_hcca hcca_oh0;
 
@@ -35,7 +36,22 @@ static void dbg_op_state()
 	}
 }
 
-void ohci_init() 
+
+/**
+ * Enqueue a transfer descriptor.
+ */
+u8 hcdi_enqueue(usb_transfer_descriptor *td) {
+	return 0;
+}
+
+/**
+ * Remove an transfer descriptor from transfer queue.
+ */
+u8 hcdi_dequeue(usb_transfer_descriptor *td) {
+	return 0;
+}
+
+void hcdi_init() 
 {
 	printf("ohci-- init\n");
 	dbg_op_state();
@@ -110,7 +126,7 @@ void ohci_init()
 	dbg_op_state();
 }
 
-void ohci0_irq() 
+void hcdi_irq()
 {
 	/* read interrupt status */
 	u32 flags = read32(OHCI0_HC_INT_STATUS);

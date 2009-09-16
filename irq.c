@@ -14,7 +14,7 @@ Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
 #include "hollywood.h"
 #include "ipc.h"
 #include "bootmii_ppc.h"
-#include "ohci.h"
+#include "usb/host/host.h"
 
 void irq_initialize(void)
 {
@@ -111,7 +111,7 @@ void irq_handler(void)
 			//sdhc_irq();
 		}
 		if (hw_flags & IRQF_OHCI0) {
-			ohci0_irq();
+			hcdi_irq();
 			write32(HW_PPCIRQFLAG, IRQF_OHCI0);
 		}
 		if (hw_flags & IRQF_OHCI1) {

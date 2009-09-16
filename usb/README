@@ -1,0 +1,33 @@
+usbport host is an open source, highly portable USB-Stack
+for memory- and cpu-constrained embedded systems written
+by Benedikt Sauter in his thesis at FH Augsburg University
+for Applied Science.
+
+usbport host is designed for embedded systems with small amounts of
+memory. A typical USBene configuration is 200 kilobytes of RAM and 
+4 kilobytes of Code-Memory. USBene consists provides
+own layers for the different USB parts. Drivers can be load
+dynamically and unloaded at runtime.
+
+usbport host runs on a variety of platform ranging from embedded
+microcontrollers such as ARM7/9 derivates and the AVR to old
+homecomputers. Code footprint is on the order of kilobytes and memory
+usage can be configured to be as low as tens of bytes.
+
+usbport host is written in the C programming language and is freely
+available as open source under a BSD-style license. More information
+about USBene can be found at the usbport host home page:
+http://www.usb-projects.de/opus
+
+Directory:
+
+arch	      Beispielimplementierungen für verschiedene Mikrocontroller 
+boards	      Schaltplan, Platinenlayout, etc. für die Testplatine
+core	      USB-Kern-Funktionen
+doc	      Diplomarbeit als Beschreibung 
+drivers	      USB-Treiber (Geräte und Klassen) 
+host	      Host-Controller-Treiber 
+lib	      Zusatzfunktionen, Typendefinitionen, etc. 
+uclibusb      USB-Bibliotheken für USB-Geräte 
+usbspec	      Datentypen und -formate der USB-Spezifikation
+
