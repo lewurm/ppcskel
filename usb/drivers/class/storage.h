@@ -63,21 +63,21 @@ void usb_storage_check();
 
 typedef struct usb_storage_cbw_t usb_storage_cbw;
 struct usb_storage_cbw_t {
-  u32 dCBWSignature;
-  u32 dCBWTag;
-  u32 dCBWDataTransferLength;
-  u8  bCWDFlags;
-  u8  bCBWLun;
-  u8  bCBWCBLength;
-  u8  CBWCB[16];
+	u32 dCBWSignature;
+	u32 dCBWTag;
+	u32 dCBWDataTransferLength;
+	u8  bCWDFlags;
+	u8  bCBWLun;
+	u8  bCBWCBLength;
+	u8  CBWCB[16];
 };
 
 typedef struct usb_storage_csw_t usb_storage_csw;
 struct usb_storage_csw_t {
-  u32 dCSWSignature;
-  u32 dCSWTag;
-  u32 dCSWDataResidue;
-  u8  bCSWStatus;
+	u32 dCSWSignature;
+	u32 dCSWTag;
+	u32 dCSWDataResidue;
+	u8  bCSWStatus;
 };
 
 

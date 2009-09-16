@@ -37,31 +37,31 @@
 
 list* list_create()
 {
-  list *l = (list*)malloc(sizeof(list));
-  l->head = NULL;
-  return l;
+	list *l = (list*)malloc(sizeof(list));
+	l->head = NULL;
+	return l;
 }
 
 u8 list_add_tail(list *l, element *e)
 {
-  e->next = NULL;
+	e->next = NULL;
 
-  /* if head is empty put first element here */
-  if(l->head==NULL){
-    l->head = e;
-    return 1;
-  }
+	/* if head is empty put first element here */
+	if(l->head==NULL){
+		l->head = e;
+		return 1;
+	}
 
-  /* find last element */
-  element * iterator;
-  iterator = l->head;
+	/* find last element */
+	element * iterator;
+	iterator = l->head;
 
-  while(iterator->next!=NULL) {
-    iterator = iterator->next;
-  } 
-  iterator->next = e;
+	while(iterator->next!=NULL) {
+		iterator = iterator->next;
+	} 
+	iterator->next = e;
 
-  return 1;
+	return 1;
 }
 
 
@@ -69,16 +69,16 @@ u8 list_add_tail(list *l, element *e)
 // FIXME: untested and unused!! 
 u8 list_delete_element(list *l, element *e)
 {
-  return 1;
+	return 1;
 }
 
 // FIXME: untested and unused!! 
 u8 list_is_element_last(list *l, element *e)
 {
-  if(e->next==NULL)
-    return 1;
-  else
-    return 0;
+	if(e->next==NULL)
+		return 1;
+	else
+		return 0;
 }
 
 
@@ -86,14 +86,14 @@ u8 list_is_element_last(list *l, element *e)
 // FIXME: untested and unused!! 
 element * list_find_next_element(list *l, element *e)
 {
-  element * iterator;
-  iterator = l->head;
+	element * iterator;
+	iterator = l->head;
 
-  while(iterator!=NULL){
-    if(iterator == e)
-      return iterator->next;
-    iterator = iterator->next;
-  }
-  return NULL;
+	while(iterator!=NULL){
+		if(iterator == e)
+			return iterator->next;
+		iterator = iterator->next;
+	}
+	return NULL;
 }
 

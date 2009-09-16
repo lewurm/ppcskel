@@ -9,15 +9,15 @@
  * modification, are permitted provided that the following conditions 
  * are met:
  *
- *   * Redistributions of source code must retain the above copyright 
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above 
- *     copyright notice, this list of conditions and the following 
- *     disclaimer in the documentation and/or other materials provided 
- *     with the distribution.
- *   * Neither the name of the FH Augsburg nor the names of its 
- *     contributors may be used to endorse or promote products derived 
- *     from this software without specific prior written permission.
+ *	 * Redistributions of source code must retain the above copyright 
+ *		 notice, this list of conditions and the following disclaimer.
+ *	 * Redistributions in binary form must reproduce the above 
+ *		 copyright notice, this list of conditions and the following 
+ *		 disclaimer in the documentation and/or other materials provided 
+ *		 with the distribution.
+ *	 * Neither the name of the FH Augsburg nor the names of its 
+ *		 contributors may be used to endorse or promote products derived 
+ *		 from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
@@ -54,30 +54,30 @@ inline static void wait_ms(int ms)
 
 typedef struct usb_device_t usb_device;
 struct usb_device_t {
-  u8  address;
-  u8  fullspeed;
-  u8  bMaxPacketSize0;
-  u8  bDeviceClass;
-  u8  bDeviceSubClass;
-  u8  bDeviceProtocoll;
-  u32 idVendor;
-  u32 idProduct;
-  u32 bcdDevice;
-  u8  bNumConfigurations;
+	u8  address;
+	u8  fullspeed;
+	u8  bMaxPacketSize0;
+	u8  bDeviceClass;
+	u8  bDeviceSubClass;
+	u8  bDeviceProtocoll;
+	u32 idVendor;
+	u32 idProduct;
+	u32 bcdDevice;
+	u8  bNumConfigurations;
 
-  u8 epSize[16];
-  u8 epTogl[16];
+	u8 epSize[16];
+	u8 epTogl[16];
 
-  usb_device *next;
+	usb_device *next;
 };
 
 
 typedef struct usb_endpoint_t usb_endpoint;
 struct usb_endpoint_t {
-  u8 type;
-  u8 size;
-  u8 togl;
-  usb_endpoint *next;
+	u8 type;
+	u8 size;
+	u8 togl;
+	usb_endpoint *next;
 };
 
 
@@ -85,10 +85,10 @@ struct usb_endpoint_t {
 
 typedef struct usb_transfer_descriptor_ep_t usb_transfer_descriptor_ep;
 struct usb_transfer_descriptor_ep_t {
-  usb_transfer_descriptor_ep *next;
-  u8 device_address;
-  u8 endpoint;
-  struct usb_transfer_descriptor_t *start;
+	usb_transfer_descriptor_ep *next;
+	u8 device_address;
+	u8 endpoint;
+	struct usb_transfer_descriptor_t *start;
 };
 
 /**
@@ -96,11 +96,11 @@ struct usb_transfer_descriptor_ep_t {
  */
 typedef struct usb_driver_t usb_driver;
 struct usb_driver_t {
-  char* name;
-  void (*probe)(void);
-  void (*check)(void);
-  void * data;
-  usb_driver *next;
+	char* name;
+	void (*probe)(void);
+	void (*check)(void);
+	void * data;
+	usb_driver *next;
 };
 
 
@@ -110,17 +110,17 @@ struct usb_driver_t {
 
 typedef struct usb_irp_t usb_irp;
 struct usb_irp_t {
-  //u8 devaddress;
-  usb_device * dev;
-  u8 endpoint;		    /* ep -> bit 7 is for direction 1=from  dev to host */
-  u8 epsize;
-  u8 type;		    /* control, interrupt, bulk or isochron */
+	//u8 devaddress;
+	usb_device * dev;
+	u8 endpoint;				/* ep -> bit 7 is for direction 1=from	dev to host */
+	u8 epsize;
+	u8 type;				/* control, interrupt, bulk or isochron */
 
-  char * buffer;
-  u16 len;
+	char * buffer;
+	u16 len;
 
-  //list * td_list;
-  u16 timeout;
+	//list * td_list;
+	u16 timeout;
 };
 
 
@@ -129,28 +129,28 @@ struct usb_irp_t {
  */
 typedef struct usb_transfer_descriptor_t usb_transfer_descriptor;
 struct usb_transfer_descriptor_t {
-  u8 devaddress;
-  u8 endpoint;
-  
-  // TODO: zusammenfassen!
-  u8 pid;
-  u8 iso;
-  u8 togl;  
-  
-  char * buffer;
-  u16 actlen;
-  
-  u8 state;
-  usb_transfer_descriptor *next;
+	u8 devaddress;
+	u8 endpoint;
+	
+	// TODO: zusammenfassen!
+	u8 pid;
+	u8 iso;
+	u8 togl;	
+	
+	char * buffer;
+	u16 actlen;
+	
+	u8 state;
+	usb_transfer_descriptor *next;
 };
 
 //typedef struct usb_core_t usb_core;
 struct usb_core_t {
-  u8 nextaddress;
-  void (*stdout)(char * arg); 
-  // driver list
-  list * drivers;
-  list * devices;
+	u8 nextaddress;
+	void (*stdout)(char * arg); 
+	// driver list
+	list * drivers;
+	list * devices;
 } core;
 
 void usb_init();
@@ -173,7 +173,7 @@ u16 usb_submit_irp(usb_irp *irp);
 usb_transfer_descriptor * usb_create_transfer_descriptor(usb_irp *irp);
 
 
-#define USB_IRP_WAITING	  1
+#define USB_IRP_WAITING		1
 
 
 #define USB_TRANSFER_DESCR_NONE 1

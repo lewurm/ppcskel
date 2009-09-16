@@ -41,43 +41,43 @@ usb_device * devices[MAX_DEVICES];
 u8 devices_in_use;
 
 usb_driver skeleton = {
-  .name    = "skeleton",
-  .probe   = usb_skeleton_probe,
-  .unprobe = usb_skeleton_unprobe,
-  .check   = usb_skeleton_check,
-  .data    = NULL
+	.name    = "skeleton",
+	.probe   = usb_skeleton_probe,
+	.unprobe = usb_skeleton_unprobe,
+	.check   = usb_skeleton_check,
+	.data    = NULL
 };
 
 /* Zum Treiber initialisieren und anmelden am Stack */
 void usb_skeleton_init()
 {
-  devices_in_use = 0;
-  usb_register_driver(&skeleton);
+	devices_in_use = 0;
+	usb_register_driver(&skeleton);
 }
 
 /* Prüfen ob neues Gerät vom Treiber aus angesteuert werden kann */
 void usb_skeleton_probe()
 {
-  usb_device * tmp;
-  tmp = usb_open(0x1234,0x9876);
-  if(tmp!=NULL) {
-    /* neues Gerät gefunden */
+	usb_device * tmp;
+	tmp = usb_open(0x1234,0x9876);
+	if(tmp!=NULL) {
+		/* neues Gerät gefunden */
 
-    /* wenn Gerät noch nicht in interner Datenstruktur */
-    if(devices_in_use<MAX_DEVICES)
-      devices[devices_in_use++] = tmp;
-  }
+		/* wenn Gerät noch nicht in interner Datenstruktur */
+		if(devices_in_use<MAX_DEVICES)
+			devices[devices_in_use++] = tmp;
+	}
 
 }
 
 /* Entferntes Gerät aus Treiberstrukturen löschen */
 void usb_skeleton_unprobe(usb_device * dev)
 {
-  u8 i;
-  for(i=0;i<MAX_DEVICES;i++) {
-    if(devices[i]==dev)
-      usb_close(dev);
-  }
+	u8 i;
+	for(i=0;i<MAX_DEVICES;i++) {
+		if(devices[i]==dev)
+			usb_close(dev);
+	}
 }
 
 /* Für periodische Endpunkte, Verwaltungs- und Steuerungsaufgaben */

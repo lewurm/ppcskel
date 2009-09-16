@@ -124,16 +124,16 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 
 struct ohci_hcca {
 #define NUM_INITS 32
-       u32 int_table[NUM_INITS]; /* periodic schedule */
-       /*
-        * OHCI defines u16 frame_no, followed by u16 zero pad.
-        * Since some processors can't do 16 bit bus accesses,
-        * portable access must be a 32 bits wide.
-        */
-       u32     frame_no;               /* current frame number */
-       u32     done_head;              /* info returned for an interrupt */
-       u8 reserved_for_hc [116];
-       u8 what [4];            /* spec only identifies 252 bytes :) */
+	u32 int_table[NUM_INITS]; /* periodic schedule */
+	/*
+	 * OHCI defines u16 frame_no, followed by u16 zero pad.
+	 * Since some processors can't do 16 bit bus accesses,
+	 * portable access must be a 32 bits wide.
+	 */
+	u32 frame_no;			/* current frame number */
+	u32 done_head;		/* info returned for an interrupt */
+	u8 reserved_for_hc [116];
+	u8 what [4];		   /* spec only identifies 252 bytes :) */
 } ALIGNED(256);
 
 #endif

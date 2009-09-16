@@ -45,37 +45,37 @@ void usb_hub_check();
 
 
 usb_driver hub = {
-  .name	  = "hub",
-  .probe  = usb_hub_probe,
-  .check  = usb_hub_check,
-  .data	  = NULL
+	.name	  = "hub",
+	.probe  = usb_hub_probe,
+	.check  = usb_hub_check,
+	.data	  = NULL
 };
 
 void usb_hub_init()
 {
-  usb_register_driver(&hub);  
+	usb_register_driver(&hub);	
 }
 
 
 void usb_hub_probe()
 {
-  // schaue ob aktuell enumeriertes geraet ein hub ist
-  #if DEBUG
-  core.stdout("Probe: Hub\r\n");
-  #endif
-  wait_ms(1000);
-  
-  usb_device * dev;
-  dev = usb_open_class(HUB_CLASSCODE);
-  if(dev != NULL){
-    hub.data = (void*)dev;    /* save handle */
-    #if DEBUG
-    core.stdout("Hub: Found Hub Device\r\n");
-    #endif 
-   
-    /* install int in EP */
+	// schaue ob aktuell enumeriertes geraet ein hub ist
+	#if DEBUG
+	core.stdout("Probe: Hub\r\n");
+	#endif
+	wait_ms(1000);
+	
+	usb_device * dev;
+	dev = usb_open_class(HUB_CLASSCODE);
+	if(dev != NULL){
+		hub.data = (void*)dev;		/* save handle */
+		#if DEBUG
+		core.stdout("Hub: Found Hub Device\r\n");
+		#endif 
+	 
+		/* install int in EP */
 
-  }
+	}
 
 
 
@@ -84,29 +84,29 @@ void usb_hub_probe()
 
 void usb_hub_check()
 {
-  // usb_read_interrupt(handle,1,buf); 
-  // ah neue geraet gefunden
-  // mit request den port geziel reseten, damit device adresse 0 hat
-  // enumeration start
-  // usb_add_device()
-  //
-  //
-  // ah geraet entfernt
-  // usb_remove_device(h1);
+	// usb_read_interrupt(handle,1,buf); 
+	// ah neue geraet gefunden
+	// mit request den port geziel reseten, damit device adresse 0 hat
+	// enumeration start
+	// usb_add_device()
+	//
+	//
+	// ah geraet entfernt
+	// usb_remove_device(h1);
 
 }
 
 
 u8 usb_hub_get_hub_descriptor(usb_device *dev, char * buf)
 {
-  return 0;  
+	return 0;  
 }
 
 u8 usb_hub_get_hub_status(usb_device *dev, char *buf)
 {
 
 
-  return 0;  
+	return 0;  
 }
 
 
@@ -114,36 +114,36 @@ u8 usb_hub_get_port_status(usb_device *dev, char *buf)
 {
 
 
-  return 0;  
+	return 0;  
 }
 
 u8 usb_hub_clear_port_feature(usb_device *dev)
 {
 
-  return 0;  
+	return 0;  
 }
 
 u8 usb_hub_set_port_feature(usb_device *dev, u8 value)
 {
 
-  return 0;  
+	return 0;  
 }
 
 u8 usb_hub_clear_hub_feature(usb_device *dev)
 {
 
-  return 0;  
+	return 0;  
 }
 
 u8 usb_hub_set_hub_feature(usb_device *dev)
 {
 
-  return 0;  
+	return 0;  
 }
 
 u8 usb_hub_set_hub_descriptor(usb_device *dev)
 {
 
-  return 0;  
+	return 0;  
 }
 

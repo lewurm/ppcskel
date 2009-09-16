@@ -39,14 +39,14 @@
 
 typedef struct element_t element;
 struct element_t {
-  void * data;
-  element * next;
+	void * data;
+	element * next;
 };
 
 
 typedef struct list_t list;
 struct list_t {
-  element * head;
+	element * head;
 };
 
 
