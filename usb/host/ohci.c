@@ -18,6 +18,14 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "host.h"
 #include "../usbspec/usb11spec.h"
 
+// macro for accessing u32 variables that need to be in little endian byte order;
+// whenever you read or write from an u32 field that the ohci host controller
+// will read or write from too, use this macro for access!
+#define ACCESS_LE(dword) ( ((dword & 0xFF000000) >> 24) | \
+			   ((dword & 0x00FF0000) >> 8) | \
+			   ((dword & 0x0000FF00) << 8) |  \
+			   ((dword & 0x000000FF) << 24) )
+
 static struct ohci_hcca hcca_oh0;
 
 static struct endpoint_descriptor *allocate_endpoint()
