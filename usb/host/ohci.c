@@ -21,10 +21,10 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 // macro for accessing u32 variables that need to be in little endian byte order;
 // whenever you read or write from an u32 field that the ohci host controller
 // will read or write from too, use this macro for access!
-#define ACCESS_LE(dword) ( ((dword & 0xFF000000) >> 24) | \
-			   ((dword & 0x00FF0000) >> 8) | \
-			   ((dword & 0x0000FF00) << 8) |  \
-			   ((dword & 0x000000FF) << 24) )
+#define ACCESS_LE(dword) (u32)( (((dword) & 0xFF000000) >> 24) | \
+			   (((dword) & 0x00FF0000) >> 8)  | \
+			   (((dword) & 0x0000FF00) << 8)  | \
+			   (((dword) & 0x000000FF) << 24) )
 
 static struct ohci_hcca hcca_oh0;
 
@@ -32,8 +32,8 @@ static struct endpoint_descriptor *allocate_endpoint()
 {
 	struct endpoint_descriptor *ep;
 	ep = (struct endpoint_descriptor *)calloc(sizeof(struct endpoint_descriptor), 16);
-	ep->flags = OHCI_ENDPOINT_GENERAL_FORMAT;
-	ep->headp = ep->tailp = ep->nexted = 0;
+	ep->flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
+	ep->headp = ep->tailp = ep->nexted = ACCESS_LE(0);
 	return ep;
 }
 
@@ -41,13 +41,13 @@ static struct general_td *allocate_general_td(size_t bsize)
 {
 	struct general_td *td;
 	td = (struct general_td *)calloc(sizeof(struct general_td), 16);
-	td->flags = 0;
-	td->nexttd = virt_to_phys(td);
+	td->flags = ACCESS_LE(0);
+	td->nexttd = ACCESS_LE(virt_to_phys(td));
 	if(bsize == 0) {
-		td->cbp = td->be = 0;
+		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		td->cbp = virt_to_phys(malloc(bsize));
-		td->be = td->cbp + bsize - 1;
+		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
+		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
 	return td;
 }
@@ -77,8 +77,8 @@ static void control_quirk()
 		}
 
 #define ED_MASK ((u32)~0x0f)
-		ed->tailp = ed->headp = virt_to_phys((void*) ((u32)td & ED_MASK));
-		ed->flags |= OHCI_ENDPOINT_DIRECTION_OUT;
+		ed->tailp = ed->headp = ACCESS_LE(virt_to_phys((void*) ((u32)td & ED_MASK)));
+		ed->flags |= ACCESS_LE(OHCI_ENDPOINT_DIRECTION_OUT);
 	}
 
 	/*
@@ -155,36 +155,36 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 
 	printf(	"===========================\n"
 			"===========================\n"
-			"done head (vor sync): 0x%08X\n", hcca_oh0.done_head);
+			"done head (vor sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	sync_before_read(&hcca_oh0, 256);
-	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
+	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
 	struct general_td *tmptd = allocate_general_td(td->actlen);
-	(void) memcpy((void*) phys_to_virt(tmptd->cbp), td->buffer, td->actlen); /* throws dsi exception after some time :X */
+	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->buffer, td->actlen); /* throws dsi exception after some time :X */
 
-	tmptd->flags &= ~OHCI_TD_DIRECTION_PID_MASK;
+	tmptd->flags &= ACCESS_LE(~OHCI_TD_DIRECTION_PID_MASK);
 	switch(td->pid) {
 		case USB_PID_SETUP:
 			printf("pid_setup\n");
-			tmptd->flags |= OHCI_TD_DIRECTION_PID_SETUP;
+			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP);
 			break;
 		case USB_PID_OUT:
 			printf("pid_out\n");
-			tmptd->flags |= OHCI_TD_DIRECTION_PID_OUT;
+			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_OUT);
 			break;
 		case USB_PID_IN:
 			printf("pid_in\n");
-			tmptd->flags |= OHCI_TD_DIRECTION_PID_IN;
+			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
 			break;
 	}
-	tmptd->flags |= (td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0;
+	tmptd->flags |= ACCESS_LE((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0);
 
 	printf("tmptd hexump (before):\n");
 	hexdump(tmptd, sizeof(struct general_td));
 	printf("tmptd-cbp hexump (before):\n");
-	hexdump((void*) phys_to_virt(tmptd->cbp), td->actlen);
+	hexdump((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->actlen);
 
-	sync_after_write((void*) (tmptd->cbp), td->actlen);
+	sync_after_write((void*) ACCESS_LE(tmptd->cbp), td->actlen);
 	sync_after_write(tmptd, sizeof(struct general_td));
 
 	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
@@ -195,12 +195,12 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 #define ED_MASK2 ~0 /*((u32)~0x0f) */
 #define ED_MASK ((u32)~0x0f) 
 	printf("tmpdt & ED_MASK: 0x%08X\n", virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
-	dummyconfig->tailp = dummyconfig->headp = virt_to_phys((void*) ((u32)tmptd & ED_MASK));
+	dummyconfig->tailp = dummyconfig->headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
-	dummyconfig->flags |= OHCI_ENDPOINT_LOW_SPEED | 
+	dummyconfig->flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED | 
 		OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) | 
 		OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
-		OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp);
+		OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
 
 	sync_after_write(dummyconfig, 64);
 	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
@@ -238,13 +238,13 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("tmptd hexump (after):\n");
 	hexdump(tmptd, sizeof(struct general_td));
 
-	sync_before_read((void*) (tmptd->cbp), td->actlen);
+	sync_before_read((void*) ACCESS_LE(tmptd->cbp), td->actlen);
 	printf("tmptd-cbp hexump (after):\n");
-	hexdump((void*) phys_to_virt(tmptd->cbp), td->actlen);
+	hexdump((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->actlen);
 
-	printf("done head (vor sync): 0x%08X\n", hcca_oh0.done_head);
+	printf("done head (vor sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	sync_before_read(&hcca_oh0, 256);
-	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
+	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
 	free(tmptd);
 	return 0;
