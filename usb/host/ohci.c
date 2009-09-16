@@ -16,9 +16,9 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "../../malloc.h"
 #include "ohci.h"
 #include "host.h"
+#include "../usbspec/usb11spec.h"
 
 static struct ohci_hcca hcca_oh0;
-static struct endpoint_descriptor *dummyconfig;
 
 static struct endpoint_descriptor *allocate_endpoint()
 {
@@ -34,15 +34,91 @@ static struct general_td *allocate_general_td(size_t bsize)
 	struct general_td *td;
 	td = (struct general_td *)calloc(sizeof(struct general_td), 16);
 	td->flags = 0;
-	td->nexttd = 0;
+	td->nexttd = virt_to_phys(td);
 	if(bsize == 0) {
 		td->cbp = td->be = 0;
 	} else {
-		td->cbp = (u32)malloc(bsize);
+		td->cbp = virt_to_phys(malloc(bsize));
 		td->be = td->cbp + bsize - 1;
 	}
 	return td;
 }
+
+static void control_quirk()
+{
+	static struct endpoint_descriptor *ed; /* empty ED */
+	static struct general_td *td; /* dummy TD */
+	u32 head;
+	u32 current;
+	u32 status;
+
+	/*
+	 * One time only.
+	 * Allocate and keep a special empty ED with just a dummy TD.
+	 */
+	if (!ed) {
+		ed = allocate_endpoint();
+		if (!ed)
+			return;
+
+		td = allocate_general_td(0);
+		if (!td) {
+			free(ed);
+			ed = NULL;
+			return;
+		}
+
+#define ED_MASK ((u32)~0x0f)
+		ed->tailp = ed->headp = virt_to_phys((void*) ((u32)td & ED_MASK));
+		ed->flags |= OHCI_ENDPOINT_DIRECTION_OUT;
+	}
+
+	/*
+	 * The OHCI USB host controllers on the Nintendo Wii
+	 * video game console stop working when new TDs are
+	 * added to a scheduled control ED after a transfer has
+	 * has taken place on it.
+	 *
+	 * Before scheduling any new control TD, we make the
+	 * controller happy by always loading a special control ED
+	 * with a single dummy TD and letting the controller attempt
+	 * the transfer.
+	 * The controller won't do anything with it, as the special
+	 * ED has no TDs, but it will keep the controller from failing
+	 * on the next transfer.
+	 */
+	head = read32(OHCI0_HC_CTRL_HEAD_ED);
+	if (head) {
+		printf("head: 0x%08X\n", head);
+		/*
+		 * Load the special empty ED and tell the controller to
+		 * process the control list.
+		 */
+		sync_after_write(ed, 64);
+		sync_after_write(td, 64);
+		write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(ed));
+
+		status = read32(OHCI0_HC_CONTROL);
+		set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
+		write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
+
+		/* spin until the controller is done with the control list */
+		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+		while(!current) {
+			udelay(10);
+			current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+		}
+
+		printf("current: 0x%08X\n", current);
+			
+		/* restore the old control head and control settings */
+		write32(OHCI0_HC_CONTROL, status);
+		write32(OHCI0_HC_CTRL_HEAD_ED, head);
+	} else {
+		printf("nohead!\n");
+	}
+}
+
 
 static void dbg_op_state() 
 {
@@ -67,24 +143,69 @@ static void dbg_op_state()
  * Enqueue a transfer descriptor.
  */
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
-	printf("===========================\ndone head (vor sync): 0x%08X\n", hcca_oh0.done_head);
+	control_quirk();
+
+	printf(	"===========================\n"
+			"===========================\n"
+			"done head (vor sync): 0x%08X\n", hcca_oh0.done_head);
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
 
-	struct general_td *tmptd = allocate_general_td(sizeof(td->buffer));
-	(void) memcpy((void*) tmptd->cbp, td->buffer, sizeof(td->buffer));
+	struct general_td *tmptd = allocate_general_td(sizeof(td->actlen));
+	(void) memcpy((void*) phys_to_virt(tmptd->cbp), td->buffer, sizeof(td->actlen)); /* throws dsi exception after some time :X */
+
+	tmptd->flags &= ~OHCI_TD_DIRECTION_PID_MASK;
+	switch(td->pid) {
+		case USB_PID_SETUP:
+			printf("pid_setup\n");
+			tmptd->flags |= OHCI_TD_DIRECTION_PID_SETUP;
+			break;
+		case USB_PID_OUT:
+			printf("pid_out\n");
+			tmptd->flags |= OHCI_TD_DIRECTION_PID_OUT;
+			break;
+		case USB_PID_IN:
+			printf("pid_in\n");
+			tmptd->flags |= OHCI_TD_DIRECTION_PID_IN;
+			break;
+	}
 
 	printf("tmptd hexump (before):\n");
-	hexdump((void*) tmptd, sizeof(tmptd));
+	hexdump(tmptd, sizeof(struct general_td));
 	printf("tmptd-cbp hexump (before):\n");
-	hexdump((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+	hexdump((void*) phys_to_virt(tmptd->cbp), sizeof(td->actlen));
 
-	sync_after_write((void*) (tmptd->cbp), sizeof(tmptd->cbp));
-	sync_after_write(tmptd, sizeof(tmptd));
+	sync_after_write((void*) (tmptd->cbp), sizeof(td->actlen));
+	sync_after_write(tmptd, sizeof(struct general_td));
 
-	dummyconfig->headp = virt_to_phys(tmptd);
+	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
+
+	printf("tmpdt & ED_MASK: 0x%08X\n", virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
+#define ED_MASK ((u32)~0x0f)
+	dummyconfig->tailp = /* dummyconfig->headp = */ virt_to_phys((void*) ((u32)tmptd & ED_MASK));
+//	dummyconfig->flags |= OHCI_ENDPOINT_DIRECTION_OUT;
 	sync_after_write(dummyconfig, 64);
+	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
 
+	printf("OHCI_CTRL_CLE: 0x%08X\n", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
+	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
+	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
+	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
+
+	printf("+++++++++++++++++++++++++++++\n");
+	/* spin until the controller is done with the control list */
+	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+	printf("current: 0x%08X\n", current);
+	while(!current) {
+		udelay(10);
+		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+	}
+
+	udelay(2000);
+	udelay(2000);
+	udelay(2000);
+	current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+	printf("current: 0x%08X\n", current);
 	printf("+++++++++++++++++++++++++++++\n");
 	udelay(2000);
 	udelay(2000);
@@ -95,17 +216,19 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	udelay(2000);
 	udelay(2000);
 
-	sync_before_read(tmptd, sizeof(tmptd));
+	sync_before_read(tmptd, sizeof(struct general_td));
 	printf("tmptd hexump (after):\n");
-	hexdump((void*) tmptd, sizeof(tmptd));
+	hexdump(tmptd, sizeof(struct general_td));
 
-	sync_before_read((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+	sync_before_read((void*) (tmptd->cbp), sizeof(td->actlen));
 	printf("tmptd-cbp hexump (after):\n");
-	hexdump((void*) (tmptd->cbp), sizeof(tmptd->cbp));
+	hexdump((void*) (tmptd->cbp), sizeof(td->actlen));
 
 	printf("done head (vor sync): 0x%08X\n", hcca_oh0.done_head);
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
+
+	free(tmptd);
 	return 0;
 }
 
@@ -118,7 +241,6 @@ u8 hcdi_dequeue(usb_transfer_descriptor *td) {
 
 void hcdi_init() 
 {
-	dummyconfig = allocate_endpoint();
 	printf("ohci-- init\n");
 	dbg_op_state();
 
@@ -157,8 +279,7 @@ void hcdi_init()
 
 	/* Tell the controller where the control and bulk lists are
 	 * The lists are empty now. */
-	sync_after_write(dummyconfig, 64);
-	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
+	write32(OHCI0_HC_CTRL_HEAD_ED, 0);
 	write32(OHCI0_HC_BULK_HEAD_ED, 0);
 
 	/* set hcca adress */

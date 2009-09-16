@@ -62,23 +62,6 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #define OHCI_INTR_OC   (1 << 30)       /* ownership change */
 #define OHCI_INTR_MIE  (1 << 31)       /* master interrupt enable */
 
-/*
- * masks used with interrupt registers:
- * HcInterruptStatus (intrstatus)
- * HcInterruptEnable (intrenable)
- * HcInterruptDisable (intrdisable)
- */
-#define OHCI_INTR_SO   (1 << 0)        /* scheduling overrun */
-#define OHCI_INTR_WDH  (1 << 1)        /* writeback of done_head */
-#define OHCI_INTR_SF   (1 << 2)        /* start frame */
-#define OHCI_INTR_RD   (1 << 3)        /* resume detect */
-#define OHCI_INTR_UE   (1 << 4)        /* unrecoverable error */
-#define OHCI_INTR_FNO  (1 << 5)        /* frame number overflow */
-#define OHCI_INTR_RHSC (1 << 6)        /* root hub status change */
-#define OHCI_INTR_OC   (1 << 30)       /* ownership change */
-#define OHCI_INTR_MIE  (1 << 31)       /* master interrupt enable */
-
-
 /* For initializing controller (mask in an HCFS mode too) */
 #define OHCI_CONTROL_INIT      (3 << 0)
 #define        OHCI_INTR_INIT \
