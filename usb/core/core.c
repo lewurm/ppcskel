@@ -428,6 +428,7 @@ usb_transfer_descriptor *usb_create_transfer_descriptor(usb_irp * irp)
 	td->endpoint = irp->endpoint;
 	td->iso = 0;
 	td->state = USB_TRANSFER_DESCR_NONE;
+	td->maxp = irp->epsize;
 
 	return td;
 }

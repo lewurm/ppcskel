@@ -151,8 +151,8 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", hcca_oh0.done_head);
 
-	struct general_td *tmptd = allocate_general_td(sizeof(td->actlen));
-	(void) memcpy((void*) phys_to_virt(tmptd->cbp), td->buffer, sizeof(td->actlen)); /* throws dsi exception after some time :X */
+	struct general_td *tmptd = allocate_general_td(td->actlen);
+	(void) memcpy((void*) phys_to_virt(tmptd->cbp), td->buffer, td->actlen); /* throws dsi exception after some time :X */
 
 	tmptd->flags &= ~OHCI_TD_DIRECTION_PID_MASK;
 	switch(td->pid) {
@@ -169,21 +169,31 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			tmptd->flags |= OHCI_TD_DIRECTION_PID_IN;
 			break;
 	}
+	tmptd->flags |= (td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0;
 
 	printf("tmptd hexump (before):\n");
 	hexdump(tmptd, sizeof(struct general_td));
 	printf("tmptd-cbp hexump (before):\n");
-	hexdump((void*) phys_to_virt(tmptd->cbp), sizeof(td->actlen));
+	hexdump((void*) phys_to_virt(tmptd->cbp), td->actlen);
 
-	sync_after_write((void*) (tmptd->cbp), sizeof(td->actlen));
+	sync_after_write((void*) (tmptd->cbp), td->actlen);
 	sync_after_write(tmptd, sizeof(struct general_td));
 
 	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
 
+	u32 current2 = read32(OHCI0_HC_CTRL_CURRENT_ED);
+	printf("current2: 0x%08X\n", current2);
+
+#define ED_MASK2 ~0 /*((u32)~0x0f) */
+#define ED_MASK ((u32)~0x0f) 
 	printf("tmpdt & ED_MASK: 0x%08X\n", virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
-#define ED_MASK ((u32)~0x0f)
-	dummyconfig->tailp = /* dummyconfig->headp = */ virt_to_phys((void*) ((u32)tmptd & ED_MASK));
-//	dummyconfig->flags |= OHCI_ENDPOINT_DIRECTION_OUT;
+	dummyconfig->tailp = dummyconfig->headp = virt_to_phys((void*) ((u32)tmptd & ED_MASK));
+
+	dummyconfig->flags |= OHCI_ENDPOINT_LOW_SPEED | 
+		OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) | 
+		OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
+		OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp);
+
 	sync_after_write(dummyconfig, 64);
 	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
 
@@ -220,9 +230,9 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("tmptd hexump (after):\n");
 	hexdump(tmptd, sizeof(struct general_td));
 
-	sync_before_read((void*) (tmptd->cbp), sizeof(td->actlen));
+	sync_before_read((void*) (tmptd->cbp), td->actlen);
 	printf("tmptd-cbp hexump (after):\n");
-	hexdump((void*) (tmptd->cbp), sizeof(td->actlen));
+	hexdump((void*) phys_to_virt(tmptd->cbp), td->actlen);
 
 	printf("done head (vor sync): 0x%08X\n", hcca_oh0.done_head);
 	sync_before_read(&hcca_oh0, 256);

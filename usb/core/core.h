@@ -110,7 +110,6 @@ struct usb_driver_t {
 
 typedef struct usb_irp_t usb_irp;
 struct usb_irp_t {
-	//u8 devaddress;
 	usb_device * dev;
 	u8 endpoint;				/* ep -> bit 7 is for direction 1=from	dev to host */
 	u8 epsize;
@@ -142,6 +141,7 @@ struct usb_transfer_descriptor_t {
 	
 	u8 state;
 	usb_transfer_descriptor *next;
+	u8 maxp;
 };
 
 //typedef struct usb_core_t usb_core;
