@@ -26,7 +26,7 @@ void exception_handler(int exception)
 
 	// check if exception happened due to the decrementer
 	else if (exception == 0x900) {
-		printf("\nDecrementer exception occured - who cares?\n");
+		//printf("\nDecrementer exception occured - who cares?\n");
 	}
 
 	else {
