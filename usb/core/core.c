@@ -104,7 +104,24 @@ usb_device *usb_add_device()
 	/* ask first 8 bytes of device descriptor with this special 
 	 * GET Descriptor Request, when device address = 0
 	 */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 64, buf, 8, 0);
+
+	/*
+	 * see page 253 in usb_20.pdf
+	 * 
+	 * bmRequestType = 0x80 = 10000000B
+	 * bRequest = GET_DESCRIPTOR
+	 * wValue = DEVICE (Descriptor Type)
+	 * wIndex = 0
+	 * wLength = 8 (in Bytes!?)
+	 */
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE, 0, 8, buf, 8, 0);
+
+	/* 
+	 * length (here =64) should be "number of byte to transfer", not 
+	 * (as here) "number of bits to transfer.
+	 * ?
+	 */
+	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 64, buf, 8, 0);
 	printf("===========\nafter usb control msg:\n");
 	hexdump(buf, sizeof(buf));
 

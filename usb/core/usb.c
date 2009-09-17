@@ -135,6 +135,7 @@ u8 usb_reset(usb_device *dev)
  */
 u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length,char *buf, u16 size, u16 timeout)
 {
+	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 8, buf, 8, 0);
 	usb_irp *irp = (usb_irp*)malloc(sizeof(usb_irp));
 	irp->dev = dev;
 	irp->endpoint = 0;
@@ -142,7 +143,7 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	irp->epsize = dev->bMaxPacketSize0;
 	irp->type = USB_CTRL;
 
-#if 1
+#if 0
 	buf[0]=(char)requesttype;
 	buf[1]=(char)request;		 
 	buf[2]=(char)(value >> 8);
@@ -153,8 +154,8 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	buf[6]=(char)(length);
 	buf[7]=(char)(length >> 8);
 #endif
-	//stupid hack?
-#if 0
+#if 1
+	//should be the right way around? :O
 	buf[0]=(char)requesttype;
 	buf[1]=(char)request;
 	buf[2]=(char)(value);

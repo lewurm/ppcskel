@@ -31,7 +31,8 @@ static struct ohci_hcca hcca_oh0;
 static struct endpoint_descriptor *allocate_endpoint()
 {
 	struct endpoint_descriptor *ep;
-	ep = (struct endpoint_descriptor *)calloc(sizeof(struct endpoint_descriptor), 16);
+	//memalign instead of calloc doesn't work here?! WTF
+	ep = (struct endpoint_descriptor *)memalign(sizeof(struct endpoint_descriptor), 16);
 	ep->flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
 	ep->headp = ep->tailp = ep->nexted = ACCESS_LE(0);
 	return ep;
@@ -40,13 +41,14 @@ static struct endpoint_descriptor *allocate_endpoint()
 static struct general_td *allocate_general_td(size_t bsize)
 {
 	struct general_td *td;
-	td = (struct general_td *)calloc(sizeof(struct general_td), 16);
+	td = (struct general_td *)memalign(sizeof(struct general_td), 16);
 	td->flags = ACCESS_LE(0);
 	td->nexttd = ACCESS_LE(virt_to_phys(td));
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
+		//td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
+		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize))); //memailgn required here?
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
 	return td;
@@ -102,8 +104,8 @@ static void control_quirk()
 		 * Load the special empty ED and tell the controller to
 		 * process the control list.
 		 */
-		sync_after_write(ed, 64);
-		sync_after_write(td, 64);
+		sync_after_write(ed, 16);
+		sync_after_write(td, 16);
 		write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(ed));
 
 		status = read32(OHCI0_HC_CONTROL);
@@ -181,9 +183,9 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	}
 	tmptd->flags |= ACCESS_LE((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0);
 
-	printf("tmptd hexump (before):\n");
+	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
-	printf("tmptd-cbp hexump (before):\n");
+	printf("tmptd->cbp hexdump (before) 0x%08X:\n", tmptd->cbp);
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
 	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
@@ -193,7 +195,6 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 
 #define ED_MASK2 ~0 /*((u32)~0x0f) */
 #define ED_MASK ((u32)~0x0f) 
-	printf("tmpdt & ED_MASK: 0x%08X\n", virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 	dummyconfig->tailp = dummyconfig->headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
 	dummyconfig->flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED | 
@@ -201,10 +202,13 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
 		OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
 
-	sync_after_write(dummyconfig, 64);
+	printf("dummyconfig hexdump (before) 0x%08X:\n", dummyconfig);
+	hexdump((void*) dummyconfig, 16);
+
+	sync_after_write(dummyconfig, 16);
 	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
 
-	printf("OHCI_CTRL_CLE: 0x%08X\n", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
+	printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
 	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
@@ -224,13 +228,18 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("+++++++++++++++++++++++++++++\n");
 	udelay(20000);
 
+
 	sync_before_read(tmptd, sizeof(struct general_td));
-	printf("tmptd hexump (after):\n");
+	printf("tmptd hexdump (after) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
 
 	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-	printf("tmptd-cbp hexump (after):\n");
+	printf("tmptd->cbp hexdump (after) 0x%08X:\n", tmptd->cbp);
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+
+	sync_before_read(dummyconfig, 16);
+	printf("dummyconfig hexdump (after) 0x%08X:\n", dummyconfig);
+	hexdump((void*) dummyconfig, 16);
 
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
