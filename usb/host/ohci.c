@@ -160,7 +160,9 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			"===========================\n");
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
-	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n", ((ACCESS_LE(hcca_oh0.frame_no) & 0xffff0000)>>16), ACCESS_LE(hcca_oh0.frame_no)&0xffff );
+	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n",
+			((ACCESS_LE(hcca_oh0.frame_no) & 0xffff0000)>>16),
+			ACCESS_LE(hcca_oh0.frame_no)&0xffff );
 	if(hcca_oh0.done_head) printf("WWWWWWWWOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOTTTTTTTTTTTT\n");
 
 	struct general_td *tmptd = allocate_general_td(td->actlen);
@@ -218,8 +220,10 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	while(!current) {
-		udelay(10);
+		udelay(1000000);
 		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+		printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
+		printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
 	}
 
 	udelay(20000);
