@@ -155,22 +155,14 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	control_quirk();
 
 	printf(	"===========================\n"
-			"===========================\n"
-			"done head (vor sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
+			"===========================\n");
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
-	printf("HCCA->frame_no after %d seconds: %d\n", 0, ACCESS_LE(hcca_oh0.frame_no));
-	printf("HCCA->frame_no WITHOUT conversion macro: %d\n", hcca_oh0.frame_no);
-	if(!first) {
-		first = 1;
-		udelay(1000000);
-		sync_before_read(&hcca_oh0, 256);
-		printf("HCCA->frame_no after %d seconds: %d\n", 1, ACCESS_LE(hcca_oh0.frame_no));
-		printf("HCCA->frame_no WITHOUT conversion macro: %d\n", hcca_oh0.frame_no);
-	}
+	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n", ((ACCESS_LE(hcca_oh0.frame_no) & 0xffff0000)>>16), ACCESS_LE(hcca_oh0.frame_no)&0xffff );
+	if(hcca_oh0.done_head) printf("WWWWWWWWOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOTTTTTTTTTTTT\n");
 
 	struct general_td *tmptd = allocate_general_td(td->actlen);
-	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->buffer, td->actlen); /* throws dsi exception after some time :X */
+	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->buffer, td->actlen); 
 
 	tmptd->flags &= ACCESS_LE(~OHCI_TD_DIRECTION_PID_MASK);
 	switch(td->pid) {
@@ -192,15 +184,12 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("tmptd hexump (before):\n");
 	hexdump(tmptd, sizeof(struct general_td));
 	printf("tmptd-cbp hexump (before):\n");
-	hexdump((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->actlen);
+	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-	sync_after_write((void*) ACCESS_LE(tmptd->cbp), td->actlen);
+	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	sync_after_write(tmptd, sizeof(struct general_td));
 
 	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
-
-	u32 current2 = read32(OHCI0_HC_CTRL_CURRENT_ED);
-	printf("current2: 0x%08X\n", current2);
 
 #define ED_MASK2 ~0 /*((u32)~0x0f) */
 #define ED_MASK ((u32)~0x0f) 
@@ -229,34 +218,24 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	}
 
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
+	udelay(20000);
 	current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	printf("+++++++++++++++++++++++++++++\n");
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
-	udelay(2000);
+	udelay(20000);
 
 	sync_before_read(tmptd, sizeof(struct general_td));
 	printf("tmptd hexump (after):\n");
 	hexdump(tmptd, sizeof(struct general_td));
 
-	sync_before_read((void*) ACCESS_LE(tmptd->cbp), td->actlen);
+	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	printf("tmptd-cbp hexump (after):\n");
-	hexdump((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->actlen);
+	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-	printf("done head (vor sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
-	free(tmptd);
+	//free(tmptd);
 	return 0;
 }
 
@@ -357,8 +336,10 @@ void hcdi_irq()
 	flags &= read32(OHCI0_HC_INT_ENABLE);
 
 	/* nothing to do? */
-	if (flags == 0)
+	if (flags == 0) {
+		printf("OHCI Interrupt occured: but not for you! WTF?!\n");
 		return;
+	}
 
 	printf("OHCI Interrupt occured: ");
 	/* UnrecoverableError */
