@@ -244,6 +244,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
+	//should be free'd after taking it from the done queue
 	//free(tmptd);
 	return 0;
 }
