@@ -43,12 +43,13 @@ static struct general_td *allocate_general_td(size_t bsize)
 	struct general_td *td;
 	td = (struct general_td *)memalign(sizeof(struct general_td), 16);
 	td->flags = ACCESS_LE(0);
-	td->nexttd = ACCESS_LE(virt_to_phys(td));
+	//td->nexttd = ACCESS_LE(virt_to_phys(td));
+	td->nexttd = ACCESS_LE(0);
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		//td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
-		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize))); //memailgn required here?
+		td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
+		//td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
 	return td;
@@ -56,8 +57,8 @@ static struct general_td *allocate_general_td(size_t bsize)
 
 static void control_quirk()
 {
-	static struct endpoint_descriptor *ed; /* empty ED */
-	static struct general_td *td; /* dummy TD */
+	static struct endpoint_descriptor *ed = 0; /* empty ED */
+	static struct general_td *td = 0; /* dummy TD */
 	u32 head;
 	u32 current;
 	u32 status;
@@ -187,17 +188,17 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
-	printf("tmptd->cbp hexdump (before) 0x%08X:\n", tmptd->cbp);
+	printf("tmptd->cbp hexdump (before) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	sync_after_write(tmptd, sizeof(struct general_td));
+	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
 	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
 
 #define ED_MASK2 ~0 /*((u32)~0x0f) */
 #define ED_MASK ((u32)~0x0f) 
-	dummyconfig->tailp = dummyconfig->headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
+	/*dummyconfig->tailp =*/ dummyconfig->headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
 	dummyconfig->flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED | 
 		OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) | 
@@ -220,10 +221,11 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	while(!current) {
-		udelay(1000000);
+	//	udelay(1000000);
+		udelay(2);
 		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
-		printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
-		printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
+	//	printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
+	//	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
 	}
 
 	udelay(20000);
@@ -238,7 +240,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	hexdump(tmptd, sizeof(struct general_td));
 
 	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-	printf("tmptd->cbp hexdump (after) 0x%08X:\n", tmptd->cbp);
+	printf("tmptd->cbp hexdump (after) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
 	sync_before_read(dummyconfig, 16);
