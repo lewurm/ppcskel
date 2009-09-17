@@ -150,6 +150,7 @@ static void dbg_op_state()
 /**
  * Enqueue a transfer descriptor.
  */
+u8 first = 0;
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	control_quirk();
 
@@ -158,6 +159,15 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			"done head (vor sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
+	printf("HCCA->frame_no after %d seconds: %d\n", 0, ACCESS_LE(hcca_oh0.frame_no));
+	printf("HCCA->frame_no WITHOUT conversion macro: %d\n", hcca_oh0.frame_no);
+	if(!first) {
+		first = 1;
+		udelay(1000000);
+		sync_before_read(&hcca_oh0, 256);
+		printf("HCCA->frame_no after %d seconds: %d\n", 1, ACCESS_LE(hcca_oh0.frame_no));
+		printf("HCCA->frame_no WITHOUT conversion macro: %d\n", hcca_oh0.frame_no);
+	}
 
 	struct general_td *tmptd = allocate_general_td(td->actlen);
 	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->buffer, td->actlen); /* throws dsi exception after some time :X */

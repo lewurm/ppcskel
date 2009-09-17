@@ -142,6 +142,7 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	irp->epsize = dev->bMaxPacketSize0;
 	irp->type = USB_CTRL;
 
+#if 1
 	buf[0]=(char)requesttype;
 	buf[1]=(char)request;		 
 	buf[2]=(char)(value >> 8);
@@ -151,6 +152,19 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	// lenght buf are the only where the order is inverted
 	buf[6]=(char)(length);
 	buf[7]=(char)(length >> 8);
+#endif
+	//stupid hack?
+#if 0
+	buf[0]=(char)requesttype;
+	buf[1]=(char)request;
+	buf[2]=(char)(value);
+	buf[3]=(char)(value >> 8);
+	buf[4]=(char)(index);
+	buf[5]=(char)(index >> 8);
+	// lenght buf are the only where the order is inverted
+	buf[6]=(char)(length >> 8);
+	buf[7]=(char)(length);
+#endif
 
 	irp->buffer = buf;
 	irp->len = length;

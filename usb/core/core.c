@@ -100,8 +100,6 @@ usb_device *usb_add_device()
 	dev->epTogl[2] = 0;
 
 	char buf[64];
-	u8 devdescr_size;
-	u8 address = usb_next_address();
 
 	/* ask first 8 bytes of device descriptor with this special 
 	 * GET Descriptor Request, when device address = 0
@@ -111,6 +109,8 @@ usb_device *usb_add_device()
 	hexdump(buf, sizeof(buf));
 
 #if 0
+	u8 devdescr_size;
+	u8 address = usb_next_address();
 	dev->bMaxPacketSize0 = (u8) buf[7] ? (u8) buf[7] : 1; //dirty?	/* setup real ep0 fifo size */
 	devdescr_size = (u8) buf[0];	/* save real length of device descriptor */
 
