@@ -169,6 +169,8 @@ Copyright (C) 2008, 2009	John Kelley <wiidev@kelley.ca>
 #define 	OHCI0_HC_RH_DESCRIPTOR_B  	(OHCI0_REG_BASE + 0x4C)
 
 #define 	OHCI0_HC_RH_STATUS 		 	(OHCI0_REG_BASE + 0x50)
+#define 	OHCI0_HC_RH_PORT_STATUS_1 	(OHCI0_REG_BASE + 0x54)
+#define 	OHCI0_HC_RH_PORT_STATUS_2 	(OHCI0_REG_BASE + 0x58)
 
 /* OHCI1 Registers */
 
@@ -200,6 +202,8 @@ Copyright (C) 2008, 2009	John Kelley <wiidev@kelley.ca>
 #define 	OHCI1_HC_RH_DESCRIPTOR_B  	(OHCI1_REG_BASE + 0x4C)
 
 #define 	OHCI1_HC_RH_STATUS 		 	(OHCI1_REG_BASE + 0x50)
+#define 	OHCI1_HC_RH_PORT_STATUS_1 	(OHCI1_REG_BASE + 0x54)
+#define 	OHCI1_HC_RH_PORT_STATUS_2 	(OHCI1_REG_BASE + 0x58)
 
 /* EHCI Registers */
 #define 	EHCI_REG_BASE 		0xd040000
