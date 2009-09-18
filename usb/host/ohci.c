@@ -365,9 +365,8 @@ void hcdi_init()
 	write32(OHCI0_HC_INT_STATUS, ~0);
 	write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_INIT);
 
-	irq_restore(cookie);
-
 	configure_ports((u8)1);
+	irq_restore(cookie);
 
 	dbg_op_state();
 }
@@ -382,28 +381,29 @@ static void configure_ports(u8 from_init)
 
 	setup_port(OHCI0_HC_RH_PORT_STATUS_1, from_init);
 	setup_port(OHCI0_HC_RH_PORT_STATUS_2, from_init);
+	printf("configure_ports done\n");
 }
 
 static void setup_port(u32 reg, u8 from_init)
 {
 	u32 port = read32(reg);
 	if((port & RH_PS_CCS) && ((port & RH_PS_CSC) || from_init)) {
-		if(!from_init)
-			write32(reg, RH_PS_CSC);
+		write32(reg, RH_PS_CSC);
 
 		wait_ms(100);
 
 		/* clear CSC flag, set PES and start port reset (PRS) */
 		write32(reg, RH_PS_PES);
+		port = read32(reg);
 		write32(reg, RH_PS_PRS);
 
 		/* spin until port reset is complete */
 		port = read32(reg);
 		while(!(port & RH_PS_PRSC)) {
-			udelay(2);
-			printf("fuck\n");
+			udelay(1);
 			port = read32(reg);
 		}
+		printf("loop done\n");
 
 		(void) usb_add_device();
 	}
