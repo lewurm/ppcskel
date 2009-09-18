@@ -401,6 +401,15 @@ static void setup_port(u32 reg, u8 from_init)
 		wait_ms(200);
 		while(!(read32(reg) & RH_PS_PES)) {
 			printf("fu\n");
+			//write32(reg, RH_PS_PES);
+			/*
+			printf("OHCI0_HC_RH_DESCRIPTOR_A:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_A));
+			printf("OHCI0_HC_RH_DESCRIPTOR_B:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_B));
+			printf("OHCI0_HC_RH_STATUS:\t\t0x%08X\n", read32(OHCI0_HC_RH_STATUS));
+			printf("OHCI0_HC_RH_PORT_STATUS_1:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_1));
+			printf("OHCI0_HC_RH_PORT_STATUS_2:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_2));
+			*/
+			return;
 		}
 		port = read32(reg);
 		wait_ms(200);
