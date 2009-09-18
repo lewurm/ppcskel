@@ -163,8 +163,8 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	buf[4]=(char)(index);
 	buf[5]=(char)(index >> 8);
 	// lenght buf are the only where the order is inverted
-	buf[6]=(char)(length >> 8);
-	buf[7]=(char)(length);
+	buf[6]=(char)(length);
+	buf[7]=(char)(length >> 8);
 #endif
 
 	irp->buffer = buf;

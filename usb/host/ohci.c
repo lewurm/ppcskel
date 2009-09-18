@@ -43,13 +43,14 @@ static struct general_td *allocate_general_td(size_t bsize)
 	struct general_td *td;
 	td = (struct general_td *)memalign(sizeof(struct general_td), 16);
 	td->flags = ACCESS_LE(0);
-	//td->nexttd = ACCESS_LE(virt_to_phys(td));
-	td->nexttd = ACCESS_LE(0);
+	// TODO !! nexttd?
+	td->nexttd = ACCESS_LE(virt_to_phys(td));
+	//td->nexttd = ACCESS_LE(0);
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
-		//td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
+		//td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
+		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
 	return td;
@@ -167,16 +168,19 @@ static void dbg_td_flag(u32 flag)
  * Enqueue a transfer descriptor.
  */
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
-	control_quirk(); //required?
+	control_quirk(); //required? YES! :O
+
+	static struct endpoint_descriptor dummyconfig;
+	dummyconfig.flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
+	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
 
 	printf(	"===========================\n"
 			"===========================\n");
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n",
-			((ACCESS_LE(hcca_oh0.frame_no) & 0xffff0000)>>16),
-			ACCESS_LE(hcca_oh0.frame_no)&0xffff );
-	if(hcca_oh0.done_head) printf("WWWWWWWWOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOTTTTTTTTTTTT\n");
+			((ACCESS_LE(hcca_oh0.frame_no) & 0xffff)>>16),
+			ACCESS_LE(hcca_oh0.frame_no)&0x0000ffff );
 
 	struct general_td *tmptd = allocate_general_td(td->actlen);
 	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->buffer, td->actlen); 
@@ -206,22 +210,21 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_after_write(tmptd, sizeof(struct general_td));
 	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
 
 #define ED_MASK2 ~0 /*((u32)~0x0f) */
 #define ED_MASK ((u32)~0x0f) 
-	/*dummyconfig->tailp =*/ dummyconfig->headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
+	dummyconfig.headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
-	dummyconfig->flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED | 
+	dummyconfig.flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED | 
 		OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) | 
 		OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
 		OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
 
-	printf("dummyconfig hexdump (before) 0x%08X:\n", dummyconfig);
-	hexdump((void*) dummyconfig, 16);
+	printf("dummyconfig hexdump (before) 0x%08X:\n", &dummyconfig);
+	hexdump((void*) &dummyconfig, 16);
 
-	sync_after_write(dummyconfig, 16);
-	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
+	sync_after_write(&dummyconfig, 16);
+	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(&dummyconfig));
 
 	printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
 	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
@@ -243,7 +246,6 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("+++++++++++++++++++++++++++++\n");
 	udelay(20000);
 
-
 	sync_before_read(tmptd, sizeof(struct general_td));
 	printf("tmptd hexdump (after) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
@@ -253,15 +255,27 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("tmptd->cbp hexdump (after) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-	sync_before_read(dummyconfig, 16);
-	printf("dummyconfig hexdump (after) 0x%08X:\n", dummyconfig);
-	hexdump((void*) dummyconfig, 16);
+	sync_before_read(&dummyconfig, 16);
+	printf("dummyconfig hexdump (after) 0x%08X:\n", &dummyconfig);
+	hexdump((void*) &dummyconfig, 16);
 
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
+	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+	(void) memcpy((void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+
+	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
+	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
 	//should be free'd after taking it from the done queue
-	//free(tmptd);
+	//however, it fails?! WTF
+#if 0
+	printf("WTF1\n");
+	free(tmptd);
+	printf("WTF0\n");
+	free((void*) tmptd->cbp);
+	printf("WTF3\n");
+#endif
 	return 0;
 }
 
