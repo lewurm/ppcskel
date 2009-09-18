@@ -149,13 +149,25 @@ static void dbg_op_state()
 	}
 }
 
+static void dbg_td_flag(u32 flag)
+{
+	printf("**************** dbg_td_flag: 0x%08X ***************\n", flag);
+	printf("CC: %X\tshould be 0, see page 32 (ohci spec)\n", (flag>>28)&0xf);
+	printf("EC: %X\tsee page 20 (ohci spec)\n", (flag>>26)&3);
+	printf(" T: %X\n", (flag>>24)&3);
+	printf("DI: %X\n", (flag>>21)&7);
+	printf("DP: %X\n", (flag>>19)&3);
+	printf(" R: %X\n", (flag>>18)&1);
+	printf("********************************************************\n");
+}
+
+
 
 /**
  * Enqueue a transfer descriptor.
  */
-u8 first = 0;
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
-	control_quirk();
+	control_quirk(); //required?
 
 	printf(	"===========================\n"
 			"===========================\n");
@@ -221,11 +233,8 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	while(!current) {
-	//	udelay(1000000);
 		udelay(2);
 		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
-	//	printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
-	//	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
 	}
 
 	udelay(20000);
@@ -238,6 +247,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_before_read(tmptd, sizeof(struct general_td));
 	printf("tmptd hexdump (after) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
+	dbg_td_flag(ACCESS_LE(tmptd->flags));
 
 	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	printf("tmptd->cbp hexdump (after) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
@@ -381,7 +391,17 @@ void hcdi_irq()
 	/* WritebackDoneHead */
 	if (flags & OHCI_INTR_WDH) {
 		printf("WritebackDoneHead\n");
-		/* TODO: figure out what the linux kernel does here... */
+		/* basically the linux irq handler reverse TDs to their urbs
+		 * and set done_head to null.
+		 * since we are polling atm, just should do the latter task.
+		 * however, this won't work for now (i don't know why...)
+		 * TODO!
+		 */
+#if 0
+		sync_before_read(&hcca_oh0, 256);
+		hcca_oh0.done_head = 0;
+		sync_after_write(&hcca_oh0, 256);
+#endif
 	}
 
 	/* TODO: handle any pending URB/ED unlinks... */
