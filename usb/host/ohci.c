@@ -359,11 +359,14 @@ void hcdi_init()
 	write32(OHCI0_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
 
 	/* wake on ConnectStatusChange, matching external hubs */
-	set32(OHCI0_HC_RH_STATUS, RH_HS_DRWE);
+	write32(OHCI0_HC_RH_STATUS, /*RH_HS_DRWE |*/ RH_HS_LPSC);
 
 	/* Choose the interrupts we care about now, others later on demand */
 	write32(OHCI0_HC_INT_STATUS, ~0);
 	write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_INIT);
+
+	//wtf?
+	wait_ms ((read32(OHCI0_HC_RH_DESCRIPTOR_A) >> 23) & 0x1fe);
 
 	configure_ports((u8)1);
 	irq_restore(cookie);
@@ -388,21 +391,23 @@ static void setup_port(u32 reg, u8 from_init)
 {
 	u32 port = read32(reg);
 	if((port & RH_PS_CCS) && ((port & RH_PS_CSC) || from_init)) {
+		write32(reg, RH_PS_CCS);
 		write32(reg, RH_PS_CSC);
 
-		wait_ms(100);
+		wait_ms(200);
 
 		/* clear CSC flag, set PES and start port reset (PRS) */
 		write32(reg, RH_PS_PES);
+		wait_ms(200);
+		while(!(read32(reg) & RH_PS_PES)) {
+			printf("fu\n");
+		}
 		port = read32(reg);
+		wait_ms(200);
 		write32(reg, RH_PS_PRS);
 
 		/* spin until port reset is complete */
-		port = read32(reg);
-		while(!(port & RH_PS_PRSC)) {
-			udelay(1);
-			port = read32(reg);
-		}
+		while((read32(reg) & RH_PS_PRS));
 		printf("loop done\n");
 
 		(void) usb_add_device();

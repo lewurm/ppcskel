@@ -42,8 +42,7 @@
 #include "../../bootmii_ppc.h"
 inline static void wait_ms(int ms)
 {
-	int i=0;
-	for(;i<ms;i++)
+	while(ms--)
 		udelay(1000);
 }
 
