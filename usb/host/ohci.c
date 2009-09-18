@@ -393,11 +393,45 @@ void hcdi_irq()
 	if (flags & OHCI_INTR_RHSC) {
 		printf("RootHubStatusChange\n");
 		/* TODO: set some next_statechange variable... */
+		u32 port1 = read32(OHCI0_HC_RH_PORT_STATUS_1);
+		u32 port2 = read32(OHCI0_HC_RH_PORT_STATUS_2);
 		printf("OHCI0_HC_RH_DESCRIPTOR_A:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_A));
 		printf("OHCI0_HC_RH_DESCRIPTOR_B:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_B));
 		printf("OHCI0_HC_RH_STATUS:\t\t0x%08X\n", read32(OHCI0_HC_RH_STATUS));
-		printf("OHCI0_HC_RH_PORT_STATUS_1:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_1));
-		printf("OHCI0_HC_RH_PORT_STATUS_2:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_2));
+		printf("OHCI0_HC_RH_PORT_STATUS_1:\t0x%08X\n", port1);
+		printf("OHCI0_HC_RH_PORT_STATUS_2:\t0x%08X\n", port2);
+
+		if((port1 & RH_PS_CCS) && (port1 & RH_PS_CSC)) {
+			wait_ms(100);
+
+			/* clear CSC flag, set PES and start port reset (PRS) */
+			write32(OHCI0_HC_RH_PORT_STATUS_1, port1 | RH_PS_CSC | RH_PS_PES | RH_PS_PRS); 
+
+			/* spin until port reset is complete */
+			port1 = read32(OHCI0_HC_RH_PORT_STATUS_1);
+			while(!(port1 & RH_PS_PRSC)) {
+				udelay(2);
+				port1 = read32(OHCI0_HC_RH_PORT_STATUS_1);
+			}
+
+			(void) usb_add_device();
+		}
+		if((port2 & RH_PS_CCS) && (port2 & RH_PS_CSC)) {
+			wait_ms(100);
+
+			/* clear CSC flag, set PES and start port reset (PRS) */
+			write32(OHCI0_HC_RH_PORT_STATUS_2, port2 | RH_PS_CSC | RH_PS_PES | RH_PS_PRS); 
+
+			/* spin until port reset is complete */
+			port2 = read32(OHCI0_HC_RH_PORT_STATUS_2);
+			while(!(port2 & RH_PS_PRSC)) {
+				udelay(2);
+				port2 = read32(OHCI0_HC_RH_PORT_STATUS_2);
+			}
+
+			(void) usb_add_device();
+		}
+
 		write32(OHCI0_HC_INT_STATUS, OHCI_INTR_RD | OHCI_INTR_RHSC);
 	}
 	/* ResumeDetected */
