@@ -402,15 +402,19 @@ void hcdi_irq()
 		printf("OHCI0_HC_RH_PORT_STATUS_2:\t0x%08X\n", port2);
 
 		if((port1 & RH_PS_CCS) && (port1 & RH_PS_CSC)) {
+			write32(OHCI0_HC_RH_PORT_STATUS_1, RH_PS_CSC);
+
 			wait_ms(100);
 
 			/* clear CSC flag, set PES and start port reset (PRS) */
-			write32(OHCI0_HC_RH_PORT_STATUS_1, port1 | RH_PS_CSC | RH_PS_PES | RH_PS_PRS); 
+			write32(OHCI0_HC_RH_PORT_STATUS_1, RH_PS_PES);
+			write32(OHCI0_HC_RH_PORT_STATUS_1, RH_PS_PRS);
 
 			/* spin until port reset is complete */
 			port1 = read32(OHCI0_HC_RH_PORT_STATUS_1);
 			while(!(port1 & RH_PS_PRSC)) {
 				udelay(2);
+				printf("fuck");
 				port1 = read32(OHCI0_HC_RH_PORT_STATUS_1);
 			}
 
