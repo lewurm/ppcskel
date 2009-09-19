@@ -116,15 +116,9 @@ usb_device *usb_add_device()
 	 * wIndex = 0
 	 * wLength = 8 (in Bytes!?)
 	 */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 8, buf, 8, 0);
 	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE, 0, 64, buf, 8, 0);
 
-	/* 
-	 * length (here =64) should be "number of byte to transfer", not 
-	 * (as here) "number of bits to transfer.
-	 * ?
-	 */
-	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 64, buf, 8, 0);
 	printf("===========\nafter usb control msg:\n");
 	hexdump(buf, sizeof(buf));
 
@@ -296,7 +290,6 @@ u16 usb_submit_irp(usb_irp *irp)
 		else
 			togl = 0;
 			/**** send token ****/
-		printf("togl: %d\n", togl);
 		hcdi_enqueue(td);
 #if 0
 		break;

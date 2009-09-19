@@ -57,8 +57,8 @@ static struct general_td *allocate_general_td(size_t bsize)
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		//td->cbp = ACCESS_LE(virt_to_phys(memalign(16, bsize))); //memailgn required here?
 		//align it to 4kb? :O
+		//td->cbp = ACCESS_LE(virt_to_phys(memalign(4096, bsize))); //memailgn required here?
 		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
 		memset(phys_to_virt(ACCESS_LE(td->cbp)), 0, bsize);
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
@@ -177,17 +177,35 @@ static void dbg_td_flag(u32 flag)
 /**
  * Enqueue a transfer descriptor.
  */
+u8 first = 1;
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
-	//control_quirk(); //required? YES! :O ... erm... or no? :/
+	printf(	"===========================\n"
+			"===========================\n");
+	control_quirk(); //required? YES! :O ... erm... or no? :/ ... in fact I have no idea
 	u32 tmptdbuffer;
 
 	static struct endpoint_descriptor dummyconfig;
-	memset(&dummyconfig, 0, 16);
-	dummyconfig.flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
-	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
+	if(first) {
+		first = 0;
+		memset(&dummyconfig, 0, 16);
+		dummyconfig.flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
+		dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
+		dummyconfig.flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED |
+				OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) |
+				OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
+				OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
+		write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(&dummyconfig));
+	} else {
+		sync_before_read(&dummyconfig, 16);
+		dummyconfig.flags |= ACCESS_LE(OHCI_ENDPOINT_SKIP);
+		printf("HALTED set?: %d\n", ACCESS_LE(dummyconfig.headp)&OHCI_ENDPOINT_HALTED);
+		sync_after_write(&dummyconfig, 16);
 
-	printf(	"===========================\n"
-			"===========================\n");
+		udelay(2000);
+		dummyconfig.headp = ACCESS_LE(0);
+		sync_after_write(&dummyconfig, 16);
+	}
+
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n",
@@ -201,22 +219,30 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	switch(td->pid) {
 		case USB_PID_SETUP:
 			printf("pid_setup\n");
-			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP | 
-					OHCI_TD_TOGGLE_0 | 
-					OHCI_TD_BUFFER_ROUNDING);
+			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP);
+			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_0);
 			break;
 		case USB_PID_OUT:
 			printf("pid_out\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_OUT);
-			tmptd->flags |= ACCESS_LE(((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0));
+			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
 			break;
 		case USB_PID_IN:
 			printf("pid_in\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
-			tmptd->flags |= ACCESS_LE(((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0));
+			/* let the endpoint do the togglestuff! */
+			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_CARRY);
+#if 0
+			/* should be done by HC!
+			 * first pid_in start with DATA0 */
+			 */
+			dummyconfig.headp = ACCESS_LE( td->togl ?
+					ACCESS_LE(dummyconfig.headp) | OHCI_ENDPOINT_TOGGLE_CARRY :
+					ACCESS_LE(dummyconfig.headp) & ~OHCI_ENDPOINT_TOGGLE_CARRY);
+#endif
 			break;
 	}
-	tmptd->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
+	tmptd->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7) | OHCI_TD_BUFFER_ROUNDING);
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
@@ -228,19 +254,15 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_after_write(tmptd, sizeof(struct general_td));
 	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-#define ED_MASK ((u32)~0x0f) 
-	dummyconfig.headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
-	dummyconfig.flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED | 
-		OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) | 
-		OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
-		OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
+#define ED_MASK ((u32)~0x0f) 
+	dummyconfig.flags &= ACCESS_LE(~OHCI_ENDPOINT_SKIP);
+	dummyconfig.headp |= ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
 	printf("dummyconfig hexdump (before) 0x%08X:\n", &dummyconfig);
 	hexdump((void*) &dummyconfig, 16);
 
 	sync_after_write(&dummyconfig, 16);
-	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(&dummyconfig));
 
 	printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
 	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
@@ -299,10 +321,6 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	(void) memcpy((void*) (td->buffer), (void*) tmptdbuffer, td->actlen);
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
-	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
-
-	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(0));
-
 
 	/* 
 	 * TD should be free'd after taking it from the done queue.
