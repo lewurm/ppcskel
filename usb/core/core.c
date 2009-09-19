@@ -100,6 +100,7 @@ usb_device *usb_add_device()
 	dev->epTogl[2] = 0;
 
 	char buf[64];
+	memset(buf, 0, sizeof(buf));
 
 	/* ask first 8 bytes of device descriptor with this special 
 	 * GET Descriptor Request, when device address = 0

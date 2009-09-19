@@ -58,8 +58,8 @@ static struct general_td *allocate_general_td(size_t bsize)
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		//td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
-		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
+		td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
+		//td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
 	return td;
@@ -178,6 +178,7 @@ static void dbg_td_flag(u32 flag)
  */
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	control_quirk(); //required? YES! :O
+	u32 tmptdbuffer;
 
 	static struct endpoint_descriptor dummyconfig;
 	dummyconfig.flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
@@ -213,14 +214,14 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
+	//save buffer adress here; HC may change tmptd->cbp
+	tmptdbuffer = phys_to_virt(ACCESS_LE(tmptd->cbp)); 
 	printf("tmptd->cbp hexdump (before) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
 	sync_after_write(tmptd, sizeof(struct general_td));
 	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-
-#define ED_MASK2 ~0 /*((u32)~0x0f) */
 #define ED_MASK ((u32)~0x0f) 
 	dummyconfig.headp = ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
@@ -244,10 +245,14 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	/* spin until the controller is done with the control list */
 	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
+
+	//don't use this quirk stuff here!
+#if 0
 	while(!current) {
 		udelay(2);
 		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	}
+#endif
 
 	udelay(20000);
 	current = read32(OHCI0_HC_CTRL_CURRENT_ED);
@@ -271,20 +276,27 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
+	struct general_td* donetd = phys_to_virt(ACCESS_LE(hcca_oh0.done_head)&~1);
+	sync_before_read(donetd, 16);
+	printf("done head hexdump: 0x%08X\n", donetd);
+	hexdump((void*) donetd, 16);
+
 	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	(void) memcpy((void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
-	//should be free'd after taking it from the done queue
-	//however, it fails?! WTF
-#if 0
-	printf("WTF1\n");
+
+
+	/* 
+	 * TD should be free'd after taking it from the done queue.
+	 * but we are very very dirty and do it anyway :p
+	 */
+
+	/* only when a buffer is allocated */
+	if(td->actlen)
+		free((void*)tmptdbuffer);
 	free(tmptd);
-	printf("WTF0\n");
-	free((void*) tmptd->cbp);
-	printf("WTF3\n");
-#endif
 	return 0;
 }
 
