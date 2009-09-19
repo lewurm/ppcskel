@@ -283,17 +283,17 @@ u16 usb_submit_irp(usb_irp *irp)
 		td = usb_create_transfer_descriptor(irp);
 		td->pid = USB_PID_SETUP;
 		td->buffer = irp->buffer;
-		td->actlen = 64;							/* control message are always 8 bytes */
+
+		/* control message are always 8 bytes */
+		td->actlen = 8;
 		memcpy(mybuf, td->buffer, td->actlen);
 
 		togl = 0;
 		td->togl = togl;						/* start with data0 */
-#if 0
 		if (togl == 0)
 			togl = 1;
 		else
 			togl = 0;
-#endif
 			/**** send token ****/
 		printf("togl: %d\n", togl);
 		hcdi_enqueue(td);

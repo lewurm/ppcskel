@@ -58,6 +58,7 @@ static struct general_td *allocate_general_td(size_t bsize)
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
 		//td->cbp = ACCESS_LE(virt_to_phys(memalign(16, bsize))); //memailgn required here?
+		//align it to 4kb? :O
 		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
 		memset(phys_to_virt(ACCESS_LE(td->cbp)), 0, bsize);
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
@@ -187,7 +188,6 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 
 	printf(	"===========================\n"
 			"===========================\n");
-	printf("td->buffer(1): 0x%08X\n", (void*)td->buffer);
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n",
@@ -201,19 +201,22 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	switch(td->pid) {
 		case USB_PID_SETUP:
 			printf("pid_setup\n");
-			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP);
+			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP | 
+					OHCI_TD_TOGGLE_0 | 
+					OHCI_TD_BUFFER_ROUNDING);
 			break;
 		case USB_PID_OUT:
 			printf("pid_out\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_OUT);
+			tmptd->flags |= ACCESS_LE(((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0));
 			break;
 		case USB_PID_IN:
 			printf("pid_in\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
+			tmptd->flags |= ACCESS_LE(((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0));
 			break;
 	}
-	tmptd->flags |= ACCESS_LE(((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0) /*| OHCI_TD_BUFFER_ROUNDING*/);
-	//tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
+	tmptd->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
@@ -287,11 +290,13 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		newlen = (u32)phys_to_virt(ACCESS_LE(tmptd->cbp)) - tmptdbuffer;
 		printf("WOOOOT newlen: %d\n", newlen);
 		hexdump((void*) tmptdbuffer, newlen);
+		printf("OLD length: %d\n", td->actlen);
+		hexdump((void*) tmptdbuffer, td->actlen);
 	}
 
 	sync_before_read((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))-newlen), td->actlen);
 	printf("td->buffer: 0x%08X\np2v(A_L(tmptd->cbp: 0x%08X\ntd->actlen: %d\n", (void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-	(void) memcpy((void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp))-newlen, td->actlen);
+	(void) memcpy((void*) (td->buffer), (void*) tmptdbuffer, td->actlen);
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
@@ -432,6 +437,8 @@ static void setup_port(u32 reg, u8 from_init)
 		/* spin until port reset is complete */
 		while(!(read32(reg) & RH_PS_PRSC)); // hint: it may stuck here
 		printf("loop done\n");
+
+		wait_ms(20);
 
 		(void) usb_add_device();
 	}
