@@ -90,7 +90,7 @@ usb_device *usb_add_device()
 {
 	usb_device *dev = (usb_device *) malloc(sizeof(usb_device));
 	dev->address = 0;
-	dev->bMaxPacketSize0 = 8;			/* send at first time only 8 bytes */
+	dev->bMaxPacketSize0 = 8; 	/* send at first time only 8 bytes */
 
 	dev->epSize[0] = 64;
 	dev->epSize[1] = 64;
@@ -116,7 +116,7 @@ usb_device *usb_add_device()
 	 * wIndex = 0
 	 * wLength = 8 (in Bytes!?)
 	 */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE, 0, 8, buf, 8, 0);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE, 0, 64, buf, 8, 0);
 
 	/* 
 	 * length (here =64) should be "number of byte to transfer", not 
@@ -283,18 +283,21 @@ u16 usb_submit_irp(usb_irp *irp)
 		td = usb_create_transfer_descriptor(irp);
 		td->pid = USB_PID_SETUP;
 		td->buffer = irp->buffer;
-		td->actlen = 8;							/* control message are always 8 bytes */
+		td->actlen = 64;							/* control message are always 8 bytes */
 		memcpy(mybuf, td->buffer, td->actlen);
 
 		togl = 0;
 		td->togl = togl;						/* start with data0 */
+#if 0
 		if (togl == 0)
 			togl = 1;
 		else
 			togl = 0;
+#endif
 			/**** send token ****/
 		printf("togl: %d\n", togl);
 		hcdi_enqueue(td);
+		break;
 #if 0
 		memcpy(td->buffer, mybuf, td->actlen);
 #endif

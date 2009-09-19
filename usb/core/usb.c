@@ -143,7 +143,7 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	irp->epsize = dev->bMaxPacketSize0;
 	irp->type = USB_CTRL;
 
-#if 0
+#if 1
 	buf[0]=(char)requesttype;
 	buf[1]=(char)request;		 
 	buf[2]=(char)(value >> 8);
@@ -154,7 +154,7 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	buf[6]=(char)(length);
 	buf[7]=(char)(length >> 8);
 #endif
-#if 1
+#if 0
 	//should be the right way around? :O
 	buf[0]=(char)requesttype;
 	buf[1]=(char)request;

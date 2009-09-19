@@ -177,7 +177,7 @@ static void dbg_td_flag(u32 flag)
  * Enqueue a transfer descriptor.
  */
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
-	control_quirk(); //required? YES! :O
+	control_quirk(); //required? YES! :O ... erm... or no? :/
 	u32 tmptdbuffer;
 
 	static struct endpoint_descriptor dummyconfig;
@@ -212,7 +212,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
 			break;
 	}
-	tmptd->flags |= ACCESS_LE((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0);
+	tmptd->flags |= ACCESS_LE(((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0) /*| OHCI_TD_BUFFER_ROUNDING*/);
 	//tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
@@ -276,19 +276,27 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
-	printf("td->buffer(1): 0x%08X\n", (void*)td->buffer);
 	struct general_td* donetd = phys_to_virt(ACCESS_LE(hcca_oh0.done_head)&~1);
 	sync_before_read(donetd, 16);
 	printf("done head hexdump: 0x%08X\n", donetd);
 	hexdump((void*) donetd, 16);
-	printf("td->buffer(2): 0x%08X\n", (void*)td->buffer);
 
-	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+	u32 newlen = 0;
+	if(td->actlen) {
+		sync_before_read((void*) tmptdbuffer, td->actlen);
+		newlen = (u32)phys_to_virt(ACCESS_LE(tmptd->cbp)) - tmptdbuffer;
+		printf("WOOOOT newlen: %d\n", newlen);
+		hexdump((void*) tmptdbuffer, newlen);
+	}
+
+	sync_before_read((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))-newlen), td->actlen);
 	printf("td->buffer: 0x%08X\np2v(A_L(tmptd->cbp: 0x%08X\ntd->actlen: %d\n", (void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-	(void) memcpy((void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+	(void) memcpy((void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp))-newlen, td->actlen);
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
+
+	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(0));
 
 
 	/* 
@@ -297,9 +305,11 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	 */
 
 	/* only when a buffer is allocated */
+#if 0
 	if(td->actlen)
 		free((void*)tmptdbuffer);
 	free(tmptd);
+#endif
 	return 0;
 }
 
@@ -408,7 +418,7 @@ static void setup_port(u32 reg, u8 from_init)
 	if((port & RH_PS_CCS) && ((port & RH_PS_CSC) || from_init)) {
 		write32(reg, RH_PS_CSC);
 
-		wait_ms(150);
+		wait_ms(120);
 
 		/* clear CSC flag, set PES and start port reset (PRS) */
 		write32(reg, RH_PS_PES);
