@@ -16,6 +16,8 @@ Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
 #include "bootmii_ppc.h"
 #include "usb/host/host.h"
 
+void show_frame_no(void);
+
 void irq_initialize(void)
 {
 	// clear flipper-pic (processor interface)
@@ -59,6 +61,7 @@ void irq_handler(void)
 
 	if (flags & (1<<BW_PI_IRQ_RESET)) { 
 		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_RESET);
+		show_frame_no();
 		printf("IRQ-BW RESET\n");
 	}
 	if (flags & (1<<BW_PI_IRQ_HW)) { //HW-PIC IRQ

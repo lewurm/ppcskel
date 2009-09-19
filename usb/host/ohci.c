@@ -40,8 +40,7 @@ static struct ohci_hcca hcca_oh0;
 static struct endpoint_descriptor *allocate_endpoint()
 {
 	struct endpoint_descriptor *ep;
-	//memalign instead of calloc doesn't work here?! WTF
-	ep = (struct endpoint_descriptor *)memalign(sizeof(struct endpoint_descriptor), 16);
+	ep = (struct endpoint_descriptor *)memalign(16, sizeof(struct endpoint_descriptor));
 	ep->flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
 	ep->headp = ep->tailp = ep->nexted = ACCESS_LE(0);
 	return ep;
@@ -50,7 +49,7 @@ static struct endpoint_descriptor *allocate_endpoint()
 static struct general_td *allocate_general_td(size_t bsize)
 {
 	struct general_td *td;
-	td = (struct general_td *)memalign(sizeof(struct general_td), 16);
+	td = (struct general_td *)memalign(16, sizeof(struct general_td));
 	td->flags = ACCESS_LE(0);
 	// TODO !! nexttd?
 	td->nexttd = ACCESS_LE(virt_to_phys(td));
@@ -58,7 +57,7 @@ static struct general_td *allocate_general_td(size_t bsize)
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		td->cbp = ACCESS_LE(virt_to_phys(memalign(bsize, 16))); //memailgn required here?
+		td->cbp = ACCESS_LE(virt_to_phys(memalign(16, bsize))); //memailgn required here?
 		//td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
@@ -491,3 +490,8 @@ void hcdi_irq()
 	}
 }
 
+void show_frame_no()
+{
+	sync_before_read(&hcca_oh0, 256);
+	printf("***** frame_no: %d *****\n", ACCESS_LE(hcca_oh0.frame_no));
+}
