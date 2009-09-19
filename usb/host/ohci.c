@@ -57,8 +57,9 @@ static struct general_td *allocate_general_td(size_t bsize)
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
-		td->cbp = ACCESS_LE(virt_to_phys(memalign(16, bsize))); //memailgn required here?
-		//td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
+		//td->cbp = ACCESS_LE(virt_to_phys(memalign(16, bsize))); //memailgn required here?
+		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
+		memset(phys_to_virt(ACCESS_LE(td->cbp)), 0, bsize);
 		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
 	}
 	return td;
@@ -180,11 +181,13 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	u32 tmptdbuffer;
 
 	static struct endpoint_descriptor dummyconfig;
+	memset(&dummyconfig, 0, 16);
 	dummyconfig.flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
 	dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
 
 	printf(	"===========================\n"
 			"===========================\n");
+	printf("td->buffer(1): 0x%08X\n", (void*)td->buffer);
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n",
@@ -210,11 +213,12 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			break;
 	}
 	tmptd->flags |= ACCESS_LE((td->togl) ? OHCI_TD_TOGGLE_1 : OHCI_TD_TOGGLE_0);
+	//tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
 	//save buffer adress here; HC may change tmptd->cbp
-	tmptdbuffer = phys_to_virt(ACCESS_LE(tmptd->cbp)); 
+	tmptdbuffer = (u32) phys_to_virt(ACCESS_LE(tmptd->cbp)); 
 	printf("tmptd->cbp hexdump (before) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
@@ -240,21 +244,18 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
 
-	printf("+++++++++++++++++++++++++++++\n");
+	//printf("+++++++++++++++++++++++++++++\n");
 	/* spin until the controller is done with the control list */
-	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
-	printf("current: 0x%08X\n", current);
+	//printf("current: 0x%08X\n", current);
 
 	//don't use this quirk stuff here!
-#if 0
-	while(!current) {
-		udelay(2);
-		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+#if 1
+	while(!read32(OHCI0_HC_CTRL_CURRENT_ED)) {
 	}
 #endif
 
 	udelay(20000);
-	current = read32(OHCI0_HC_CTRL_CURRENT_ED);
+	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	printf("+++++++++++++++++++++++++++++\n");
 	udelay(20000);
@@ -275,12 +276,15 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	sync_before_read(&hcca_oh0, 256);
 	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
 
+	printf("td->buffer(1): 0x%08X\n", (void*)td->buffer);
 	struct general_td* donetd = phys_to_virt(ACCESS_LE(hcca_oh0.done_head)&~1);
 	sync_before_read(donetd, 16);
 	printf("done head hexdump: 0x%08X\n", donetd);
 	hexdump((void*) donetd, 16);
+	printf("td->buffer(2): 0x%08X\n", (void*)td->buffer);
 
 	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+	printf("td->buffer: 0x%08X\np2v(A_L(tmptd->cbp: 0x%08X\ntd->actlen: %d\n", (void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	(void) memcpy((void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);

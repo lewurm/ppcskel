@@ -40,6 +40,7 @@
 #include "../lib/list.h"
 #include "../../malloc.h"
 #include "../../bootmii_ppc.h" //printf
+#include "../../string.h" //memset
 
 /**
  * Initialize USB stack.
@@ -262,6 +263,7 @@ u16 usb_submit_irp(usb_irp *irp)
 	u8 runloop = 1;
 	u16 restlength = irp->len;
 	char *td_buf_ptr = irp->buffer;
+	char mybuf[64];
 
 	//u8 togl=irp->dev->epTogl[(irp->endpoint & 0x7F)];
 	u8 togl = irp->dev->epTogl[(irp->endpoint & 0x7F)];
@@ -282,6 +284,7 @@ u16 usb_submit_irp(usb_irp *irp)
 		td->pid = USB_PID_SETUP;
 		td->buffer = irp->buffer;
 		td->actlen = 8;							/* control message are always 8 bytes */
+		memcpy(mybuf, td->buffer, td->actlen);
 
 		togl = 0;
 		td->togl = togl;						/* start with data0 */
@@ -290,7 +293,11 @@ u16 usb_submit_irp(usb_irp *irp)
 		else
 			togl = 0;
 			/**** send token ****/
+		printf("togl: %d\n", togl);
 		hcdi_enqueue(td);
+#if 0
+		memcpy(td->buffer, mybuf, td->actlen);
+#endif
 
 			/***************** Data Stage ***********************/
 			/**
@@ -348,6 +355,7 @@ u16 usb_submit_irp(usb_irp *irp)
 				}
 
 					/**** send token ****/
+				printf("togl: %d\n", togl);
 				hcdi_enqueue(td);
 
 				/* pruefe ob noch weitere Pakete vom Device abgeholt werden muessen */
@@ -373,6 +381,7 @@ u16 usb_submit_irp(usb_irp *irp)
 			td->pid = USB_PID_IN;
 		}
 			/**** send token ****/
+		printf("togl: %d\n", togl);
 		hcdi_enqueue(td);
 		free(td);
 
@@ -417,6 +426,7 @@ u16 usb_submit_irp(usb_irp *irp)
 			else
 				togl = 0;
 				/**** send token ****/
+			printf("togl: %d\n", togl);
 			hcdi_enqueue(td);
 			free(td);
 		}
