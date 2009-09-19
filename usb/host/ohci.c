@@ -178,7 +178,7 @@ static void dbg_td_flag(u32 flag)
  * Enqueue a transfer descriptor.
  */
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
-	control_quirk(); //required? YES! :O ... erm... or no? :/
+	//control_quirk(); //required? YES! :O ... erm... or no? :/
 	u32 tmptdbuffer;
 
 	static struct endpoint_descriptor dummyconfig;
