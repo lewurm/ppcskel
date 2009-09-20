@@ -153,7 +153,6 @@ static void dbg_op_state()
 	}
 }
 
-#if 1
 static void dbg_td_flag(u32 flag)
 {
 	printf("**************** dbg_td_flag: 0x%08X ***************\n", flag);
@@ -165,16 +164,20 @@ static void dbg_td_flag(u32 flag)
 	printf(" R: %X\n", (flag>>18)&1);
 	printf("********************************************************\n");
 }
-#endif
 
 static void general_td_fill(struct general_td *dest, const usb_transfer_descriptor *src)
 {
-	dest->cbp = LE(virt_to_phys(src->buffer));
+	if(src->actlen) {
+		dest->cbp = LE(virt_to_phys(src->buffer));
+		dest->be = LE(LE(dest->cbp) + src->actlen - 1);
+		/* save virtual address here */
+		dest->bufaddr = (u32) src->buffer;
+	}
+	else {
+		dest->cbp = dest->be = LE(0);
+		dest->bufaddr = 0;
+	}
 
-	/* save virtual address here */
-	dest->bufaddr = (u32) src->buffer;
-
-	dest->be = src->actlen ? LE(LE(dest->cbp) + src->actlen - 1) : LE(0);
 	dest->buflen = src->actlen;
 
 	dest->flags &= LE(~OHCI_TD_DIRECTION_PID_MASK);
@@ -230,6 +233,9 @@ void hcdi_fire()
 {
 	printf("<^>  <^>  <^> hcdi_fire(start)\n");
 
+	if(edhead == 0)
+		return;
+
 	control_quirk(); //required? YES! :O ... erm... or no? :/ ... in fact I have no idea
 	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
 
@@ -244,7 +250,7 @@ void hcdi_fire()
 		dump_address(x, sizeof(struct general_td), "x(before)");
 
 		if(x->buflen > 0) {
-			sync_after_write((void*) x->cbp, x->buflen);
+			sync_after_write((void*) phys_to_virt(LE(x->cbp)), x->buflen);
 			dump_address((void*) phys_to_virt(LE(x->cbp)), x->buflen, "x->cbp(before)");
 		}
 		x = phys_to_virt(LE(x->nexttd));
@@ -270,24 +276,23 @@ void hcdi_fire()
 	 u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	 printf("current: 0x%08X\n", current);
 	 printf("+++++++++++++++++++++++++++++\n");
-	 udelay(100000);
+	 udelay(1000000);
 #endif
 
 	sync_before_read(&hcca_oh0, sizeof(hcca_oh0));
 	struct general_td *n = phys_to_virt(LE(hcca_oh0.done_head) & ~1);
 	printf("done_head: 0x%08X\n", n);
-#if 1
+
 	struct general_td *prev = 0, *next = 0;
 	/* reverse done queue */
 	while(virt_to_phys(n)) {
+		sync_before_read((void*) n, sizeof(struct general_td));
 		printf("n: 0x%08X\n", n);
 		printf("next: 0x%08X\n", next);
 		printf("prev: 0x%08X\n", prev);
+
 		next = n;
-
-		sync_before_read((void*) n, sizeof(struct general_td));
-
-		n = (struct general_td*) phys_to_virt(LE(next->nexttd));
+		n = (struct general_td*) phys_to_virt(LE(n->nexttd));
 		next->nexttd = (u32) prev;
 		prev = next;
 	}
@@ -298,16 +303,23 @@ void hcdi_fire()
 		if(prev) {
 			free(prev);
 		}
+
 		dump_address(n, sizeof(struct general_td), "n(after)");
 
-		sync_before_read((void*) n->bufaddr, n->buflen);
-		dump_address((void*) n->bufaddr, n->buflen, "n->bufaddr(after)");
+		if(n->buflen > 0) {
+			sync_before_read((void*) n->bufaddr, n->buflen);
+			dump_address((void*) n->bufaddr, n->buflen, "n->bufaddr(after)");
+		}
 		dbg_td_flag(LE(n->flags));
-		n = prev = (struct general_td*) n->nexttd;
+		prev = n;
+		n = (struct general_td*) n->nexttd;
 	}
+	if(prev) {
+		free(prev);
+	}
+
 	hcca_oh0.done_head = 0;
 	sync_after_write(&hcca_oh0, sizeof(hcca_oh0));
-#endif
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 

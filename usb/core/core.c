@@ -277,7 +277,6 @@ u16 usb_submit_irp(usb_irp *irp)
 
 		/* control message are always 8 bytes */
 		td->actlen = 8;
-		memcpy(mybuf, td->buffer, td->actlen);
 
 		togl = 0;
 		/* start with data0 */
