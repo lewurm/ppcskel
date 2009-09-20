@@ -261,13 +261,10 @@ u16 usb_submit_irp(usb_irp *irp)
 	char *td_buf_ptr = irp->buffer;
 	char mybuf[64];
 
-	//u8 togl=irp->dev->epTogl[(irp->endpoint & 0x7F)];
 	u8 togl = irp->dev->epTogl[(irp->endpoint & 0x7F)];
-	//u8 togl=0;
 
 	switch (irp->type) {
 	case USB_CTRL:
-
 		/* alle requests mit dem gleichen algorithmus zerteilen
 		 * das einzige ist der spezielle get_Device_descriptor request
 		 * bei dem eine laenge von 64 angegeben ist.
@@ -275,7 +272,7 @@ u16 usb_submit_irp(usb_irp *irp)
 		 * dann reichen die ersten 8 byte.
 		 */
 
-			/***************** Setup Stage ***********************/
+		/***************** Setup Stage ***********************/
 		td = usb_create_transfer_descriptor(irp);
 		td->pid = USB_PID_SETUP;
 		td->buffer = irp->buffer;
@@ -285,44 +282,41 @@ u16 usb_submit_irp(usb_irp *irp)
 		memcpy(mybuf, td->buffer, td->actlen);
 
 		togl = 0;
-		td->togl = togl;						/* start with data0 */
-		if (togl == 0)
-			togl = 1;
-		else
-			togl = 0;
-			/**** send token ****/
+		/* start with data0 */
+		td->togl = togl;
+		togl = togl ? 0 : 1;
+
+		/**** send token ****/
 		hcdi_enqueue(td);
-#if 0
-		break;
-		memcpy(td->buffer, mybuf, td->actlen);
-#endif
 
-			/***************** Data Stage ***********************/
-			/**
-			 * You can see at bit 7 of bmRequestType if this stage is used,
-			 * default requests are always 8 byte greate, from
-			 * host to device. Stage 3 is only neccessary if the request
-			 * expected datas from the device.
-			 * bit7 - 1 = from device to host -> yes we need data stage
-			 * bit7 - 0 = from host to device -> no send zero packet
-			 *
-			 * nach einem setup token kann nur ein IN token in stage 3 folgen
-			 * nie aber ein OUT. Ein Zero OUT wird nur als Bestaetigung benoetigt.
-			 *
-			 *
-			 * bit7 = 1
-			 *	Device to Host
-			 *	- es kommen noch Daten mit PID_IN an
-			 *	- host beendet mit PID_OUT DATA1 Zero
-			 * bit7 - 0
-			 *	Host zu Device (wie set address)
-			 *	- device sendet ein PID_IN DATA1 Zero Packet als bestaetigung
-			 */
-		usb_device_request *setup = (usb_device_request *) irp->buffer;
+		/***************** Data Stage ***********************/
+		/**
+		 * You can see at bit 7 of bmRequestType if this stage is used,
+		 * default requests are always 8 byte greate, from
+		 * host to device. Stage 3 is only neccessary if the request
+		 * expected datas from the device.
+		 * bit7 - 1 = from device to host -> yes we need data stage
+		 * bit7 - 0 = from host to device -> no send zero packet
+		 *
+		 * nach einem setup token kann nur ein IN token in stage 3 folgen
+		 * nie aber ein OUT. Ein Zero OUT wird nur als Bestaetigung benoetigt.
+		 *
+		 *
+		 * bit7 = 1
+		 *	Device to Host
+		 *	- es kommen noch Daten mit PID_IN an
+		 *	- host beendet mit PID_OUT DATA1 Zero
+		 * bit7 - 0
+		 *	Host zu Device (wie set address)
+		 *	- device sendet ein PID_IN DATA1 Zero Packet als bestaetigung
+		 */
+		memcpy(mybuf, irp->buffer, td->actlen);
+		usb_device_request *setup = (usb_device_request *) mybuf;
 		u8 bmRequestType = setup->bmRequestType;
+		free(td);
 
-		if (bmRequestType & 0x80) { /* check bit 7 of bmRequestType */
-
+		/* check bit 7 of bmRequestType */
+		if (bmRequestType & 0x80) { 
 			/* schleife die die tds generiert */
 			while (runloop) {
 				td = usb_create_transfer_descriptor(irp);
@@ -339,54 +333,50 @@ u16 usb_submit_irp(usb_irp *irp)
 
 				td->pid = USB_PID_IN;
 				td->togl = togl;
-				if (togl == 0)
-					togl = 1;
-				else
-					togl = 0;
+				togl = togl ? 0 : 1;
 
 				/* wenn device descriptor von adresse 0 angefragt wird werden nur
 				 * die ersten 8 byte abgefragt
 				 */
 				if (setup->bRequest == GET_DESCRIPTOR && (setup->wValue & 0xff) == 1
 						&& td->devaddress == 0) {
-					runloop = 0;					/* stop loop */
+					/* stop loop */
+					runloop = 0;
 				}
 
-					/**** send token ****/
-				printf("togl: %d\n", togl);
+				/**** send token ****/
 				hcdi_enqueue(td);
 
 				/* pruefe ob noch weitere Pakete vom Device abgeholt werden muessen */
 				restlength = restlength - irp->epsize;
+				free(td);
 			}
 		}
 
 
-			/***************** Status Stage ***********************/
+		/***************** Status Stage ***********************/
 		/* Zero packet for end */
 		td = usb_create_transfer_descriptor(irp);
 		td->togl = 1;								/* zero data packet = always DATA1 packet */
 		td->actlen = 0;
 		td->buffer = NULL;
 
-			/**
-			 * bit7 = 1, host beendet mit PID_OUT DATA1 Zero
-			 * bit7 = 0, device sendet ein PID_IN DATA1 Zero Packet als bestaetigung
-			 */
-		if (bmRequestType & 0x80) { /* check bit 7 of bmRequestType */
+		/**
+		 * bit7 = 1, host beendet mit PID_OUT DATA1 Zero
+		 * bit7 = 0, device sendet ein PID_IN DATA1 Zero Packet als bestaetigung
+		 */
+		/* check bit 7 of bmRequestType */
+		if (bmRequestType & 0x80) {
 			td->pid = USB_PID_OUT;
 		} else {
 			td->pid = USB_PID_IN;
 		}
-			/**** send token ****/
-		printf("togl: %d\n", togl);
+		/**** send token ****/
 		hcdi_enqueue(td);
 		free(td);
-
-
 		break;
-	case USB_BULK:
 
+	case USB_BULK:
 		core.stdout("bulk\r\n");
 		//u8 runloop=1;
 		//u16 restlength = irp->len;
@@ -424,7 +414,6 @@ u16 usb_submit_irp(usb_irp *irp)
 			else
 				togl = 0;
 				/**** send token ****/
-			printf("togl: %d\n", togl);
 			hcdi_enqueue(td);
 			free(td);
 		}

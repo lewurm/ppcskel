@@ -135,7 +135,6 @@ u8 usb_reset(usb_device *dev)
  */
 u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length,char *buf, u16 size, u16 timeout)
 {
-	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, 8, buf, 8, 0);
 	usb_irp *irp = (usb_irp*)malloc(sizeof(usb_irp));
 	irp->dev = dev;
 	irp->endpoint = 0;
@@ -143,29 +142,14 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	irp->epsize = dev->bMaxPacketSize0;
 	irp->type = USB_CTRL;
 
-#if 0
-	buf[0]=(char)requesttype;
-	buf[1]=(char)request;		 
-	buf[2]=(char)(value >> 8);
-	buf[3]=(char)(value);		
-	buf[4]=(char)(index >> 8);
-	buf[5]=(char)(index);	
-	// lenght buf are the only where the order is inverted
-	buf[6]=(char)(length);
-	buf[7]=(char)(length >> 8);
-#endif
-#if 1
-	//should be the right way around? :O
 	buf[0]=(char)requesttype;
 	buf[1]=(char)request;
 	buf[2]=(char)(value);
 	buf[3]=(char)(value >> 8);
 	buf[4]=(char)(index);
 	buf[5]=(char)(index >> 8);
-	// lenght buf are the only where the order is inverted
 	buf[6]=(char)(length);
 	buf[7]=(char)(length >> 8);
-#endif
 
 	irp->buffer = buf;
 	irp->len = length;

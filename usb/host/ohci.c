@@ -51,18 +51,8 @@ static struct general_td *allocate_general_td(size_t bsize)
 	struct general_td *td;
 	td = (struct general_td *)memalign(16, sizeof(struct general_td));
 	td->flags = ACCESS_LE(0);
-	// TODO !! nexttd?
-	//td->nexttd = ACCESS_LE(virt_to_phys(td));
 	td->nexttd = ACCESS_LE(0);
-	if(bsize == 0) {
-		td->cbp = td->be = ACCESS_LE(0);
-	} else {
-		//align it to 4kb? :O
-		//td->cbp = ACCESS_LE(virt_to_phys(memalign(4096, bsize))); //memailgn required here?
-		td->cbp = ACCESS_LE(virt_to_phys(malloc(bsize)));
-		memset(phys_to_virt(ACCESS_LE(td->cbp)), 0, bsize);
-		td->be = ACCESS_LE(ACCESS_LE(td->cbp) + bsize - 1);
-	}
+	td->cbp = td->be = ACCESS_LE(0);
 	return td;
 }
 
@@ -172,9 +162,10 @@ static void dbg_td_flag(u32 flag)
 	printf("********************************************************\n");
 }
 
-static void general_td_fill(struct general_td *dest, usb_transfer_descriptor *src)
+static void general_td_fill(struct general_td *dest, const usb_transfer_descriptor *src)
 {
-	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(dest->cbp))), src->buffer, src->actlen); 
+	dest->cbp = ACCESS_LE(virt_to_phys(src->buffer));
+	dest->be = ACCESS_LE(ACCESS_LE(dest->cbp) + src->actlen - 1);
 	dest->flags &= ACCESS_LE(~OHCI_TD_DIRECTION_PID_MASK);
 	switch(src->pid) {
 		case USB_PID_SETUP:
@@ -230,7 +221,7 @@ static void dump_address(void *addr, u32 size, const char* str)
  * Enqueue a transfer descriptor.
  */
 u8 first = 0;
-u8 hcdi_enqueue(usb_transfer_descriptor *td) {
+u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
 	static struct general_td *tSetup,*tData;
 	static u32 tSetupbuffer, tDatabuffer, tStatusbuffer;
 	static u32 tSetupblen, tDatablen, tStatusblen;
@@ -304,11 +295,11 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	}
 #endif
 
-	udelay(1000000);
+	udelay(100000);
 	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	printf("+++++++++++++++++++++++++++++\n");
-	udelay(10000000);
+	udelay(100000);
 
 	dump_address(tSetup, sizeof(struct general_td), "tSetup(after)");
 	dump_address((void*) phys_to_virt(ACCESS_LE(tSetup->cbp)), tSetupblen, "tSetup->cbp(after)");
@@ -330,16 +321,15 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	/* disable control list */
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 
-	/* 
+	/* TODO
 	 * TD should be free'd after taking it from the done queue.
-	 * but we are very very dirty and do it anyway :p
 	 */
 
-	/* only when a buffer is allocated */
-#if 0
-	if(td->actlen)
-		free((void*)tStatusbuffer);
+#if 1
+	free(tSetup);
+	free(tData);
 	free(tStatus);
+	free(dummyconfig);
 #endif
 	printf("hcdi_enqueue, done!\n");
 	return 0;
