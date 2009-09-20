@@ -52,8 +52,8 @@ static struct general_td *allocate_general_td(size_t bsize)
 	td = (struct general_td *)memalign(16, sizeof(struct general_td));
 	td->flags = ACCESS_LE(0);
 	// TODO !! nexttd?
-	td->nexttd = ACCESS_LE(virt_to_phys(td));
-	//td->nexttd = ACCESS_LE(0);
+	//td->nexttd = ACCESS_LE(virt_to_phys(td));
+	td->nexttd = ACCESS_LE(0);
 	if(bsize == 0) {
 		td->cbp = td->be = ACCESS_LE(0);
 	} else {
@@ -253,6 +253,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		first++;
 		return 0;
 	}
+	first = 0;
 	struct general_td *tStatus = allocate_general_td(td->actlen);
 	general_td_fill(tStatus, td);
 	tStatusbuffer = (u32) phys_to_virt(ACCESS_LE(tStatus->cbp)); 
@@ -262,28 +263,24 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			"===========================\n");
 	control_quirk(); //required? YES! :O ... erm... or no? :/ ... in fact I have no idea
 
-	static struct endpoint_descriptor dummyconfig;
-	if(first) {
-		first = 0;
-		memset(&dummyconfig, 0, 16);
-		dummyconfig.flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
-		dummyconfig.headp = dummyconfig.tailp = dummyconfig.nexted = ACCESS_LE(0);
-		dummyconfig.flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED |
-				OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) |
-				OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
-				OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
-		write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(&dummyconfig));
-	} else {
-		sync_before_read(&dummyconfig, 16);
-		printf("HALTED set?: %d\n", ACCESS_LE(dummyconfig.headp)&OHCI_ENDPOINT_HALTED);
-		dummyconfig.headp = ACCESS_LE(0);
-		sync_after_write(&dummyconfig, 16);
-	}
+	struct endpoint_descriptor *dummyconfig = allocate_endpoint();
+	dummyconfig->flags = ACCESS_LE(OHCI_ENDPOINT_GENERAL_FORMAT);
+	dummyconfig->headp = dummyconfig->tailp = dummyconfig->nexted = ACCESS_LE(0);
+	dummyconfig->flags |= ACCESS_LE(OHCI_ENDPOINT_LOW_SPEED |
+			OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) |
+			OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
+			OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
+	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(dummyconfig));
 
 #define ED_MASK ((u32)~0x0f) 
-	dummyconfig.headp |= ACCESS_LE(virt_to_phys((void*) ((u32)tSetup & ED_MASK)));
+	dummyconfig->headp |= ACCESS_LE(virt_to_phys((void*) ((u32)tSetup & ED_MASK)));
 	tSetup->nexttd = ACCESS_LE(virt_to_phys((void*) ((u32)tData & ED_MASK)));
 	tData->nexttd = ACCESS_LE(virt_to_phys((void*) ((u32)tStatus & ED_MASK)));
+
+	sync_after_write(dummyconfig, 16);
+	sync_after_write(tSetup, sizeof(struct general_td));
+	sync_after_write(tData, sizeof(struct general_td));
+	sync_after_write(tStatus, sizeof(struct general_td));
 
 	dump_address(tSetup, sizeof(struct general_td), "tSetup(before)");
 	dump_address((void*) phys_to_virt(ACCESS_LE(tSetup->cbp)), tSetupblen, "tSetup->cbp(before)");
@@ -294,13 +291,9 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	dump_address(tStatus, sizeof(struct general_td), "tStatus(before)");
 	dump_address((void*) phys_to_virt(ACCESS_LE(tStatus->cbp)), tStatusblen, "tStatus->cbp(before)");
 
-	dump_address(&dummyconfig, sizeof(struct endpoint_descriptor), "dummyconfig(before)");
+	dump_address(dummyconfig, sizeof(struct endpoint_descriptor), "dummyconfig(before)");
 
-	sync_after_write(&dummyconfig, 16);
-	sync_after_write(tSetup, sizeof(struct general_td));
-	sync_after_write(tData, sizeof(struct general_td));
-	sync_after_write(tStatus, sizeof(struct general_td));
-
+	printf("ctrl head: 0x%08X\n", read32(OHCI0_HC_CTRL_HEAD_ED));
 	/* trigger control list */
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
@@ -332,7 +325,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	//dump_address((void*) tStatusbuffer, tStatusblen, "tStatusbuffer");
 	dbg_td_flag(ACCESS_LE(tStatus->flags));
 
-	dump_address(&dummyconfig, sizeof(struct endpoint_descriptor), "dummyconfig(after)");
+	dump_address(dummyconfig, sizeof(struct endpoint_descriptor), "dummyconfig(after)");
 
 	/* disable control list */
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
@@ -348,6 +341,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		free((void*)tStatusbuffer);
 	free(tStatus);
 #endif
+	printf("hcdi_enqueue, done!\n");
 	return 0;
 }
 
