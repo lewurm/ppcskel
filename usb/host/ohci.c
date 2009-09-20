@@ -261,10 +261,10 @@ void hcdi_fire()
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
 
 	/* poll until edhead->headp is null */
-	sync_before_read(edhead, sizeof(struct endpoint_descriptor));
-	while(LE(edhead->headp)&~0xf) {
+	do {
 		sync_before_read(edhead, sizeof(struct endpoint_descriptor));
-	}
+		printf("edhead->headp: 0x%08X\n", LE(edhead->headp));
+	} while(LE(edhead->headp)&~0xf);
 
 	struct general_td *n = phys_to_virt(read32(OHCI0_HC_DONE_HEAD) & ~1);
 	printf("hc_done_head: 0x%08X\n", read32(OHCI0_HC_DONE_HEAD));
