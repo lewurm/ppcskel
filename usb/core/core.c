@@ -128,11 +128,13 @@ usb_device *usb_add_device()
 	devdescr_size = (u8) buf[0];	/* save real length of device descriptor */
 
 	/* define new adress */
+	/*
 	usb_control_msg(dev, 0x00, SET_ADDRESS, address << 8, 0, 0, buf, 8, 0);
 	dev->address = address;
+	*/
 
 	/* get complete device descriptor */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, 1, 0, devdescr_size, buf, 8,
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8,
 									0);
 
 	/* save only really neccessary values for this small usbstack */

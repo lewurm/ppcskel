@@ -260,32 +260,18 @@ void hcdi_fire()
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
 
-	//don't use this quirk stuff here!?
-#if 0
-	u32 wait=0;
-	while(!read32(OHCI0_HC_CTRL_CURRENT_ED)) {
+	/* poll until edhead->headp is null */
+	sync_before_read(edhead, sizeof(struct endpoint_descriptor));
+	while(LE(edhead->headp)&~0xf) {
+		sync_before_read(edhead, sizeof(struct endpoint_descriptor));
 	}
-	while(read32(OHCI0_HC_CTRL_CURRENT_ED));
-	printf("+++++++++++++++++++++++++++++\n");
-	printf("wait: %d\n", wait);
-	udelay(1000000);
-#else
-	 while(!read32(OHCI0_HC_CTRL_CURRENT_ED)) {
-	 }
-	 udelay(100000);
-	 u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
-	 printf("current: 0x%08X\n", current);
-	 printf("+++++++++++++++++++++++++++++\n");
-	 udelay(1000000);
-#endif
 
-	sync_before_read(&hcca_oh0, sizeof(hcca_oh0));
-	struct general_td *n = phys_to_virt(LE(hcca_oh0.done_head) & ~1);
-	printf("done_head: 0x%08X\n", n);
+	struct general_td *n = phys_to_virt(read32(OHCI0_HC_DONE_HEAD) & ~1);
+	printf("hc_done_head: 0x%08X\n", read32(OHCI0_HC_DONE_HEAD));
 
 	struct general_td *prev = 0, *next = 0;
 	/* reverse done queue */
-	while(virt_to_phys(n)) {
+	while(virt_to_phys(n) && edhead->tdcount) {
 		sync_before_read((void*) n, sizeof(struct general_td));
 		printf("n: 0x%08X\n", n);
 		printf("next: 0x%08X\n", next);
@@ -295,6 +281,8 @@ void hcdi_fire()
 		n = (struct general_td*) phys_to_virt(LE(n->nexttd));
 		next->nexttd = (u32) prev;
 		prev = next;
+
+		edhead->tdcount--;
 	}
 
 	n = next;
@@ -324,8 +312,8 @@ void hcdi_fire()
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 
 	free(edhead);
-
 	edhead = 0;
+
 	printf("<^>  <^>  <^> hcdi_fire(end)\n");
 }
 
@@ -342,10 +330,12 @@ u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
 				OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) |
 				OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
 				OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
+		edhead->tdcount = 0;
 	}
 
 	struct general_td *tdhw = allocate_general_td();
 	general_td_fill(tdhw, td);
+	edhead->tdcount ++;
 
 	if(!edhead->headp) {
 		/* first transfer */

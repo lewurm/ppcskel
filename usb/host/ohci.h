@@ -120,10 +120,14 @@ struct ohci_hcca {
 } ALIGNED(256);
 
 struct endpoint_descriptor {
+	/* required by HC */
 	u32 flags;
 	u32 tailp;
 	u32 headp;
 	u32 nexted;
+
+	/* required by software */
+	u32 tdcount;
 } ALIGNED(16);
 
 #define	OHCI_ENDPOINT_ADDRESS_MASK				0x0000007f
