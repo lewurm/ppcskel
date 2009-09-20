@@ -116,11 +116,9 @@ usb_device *usb_add_device()
 	 * wIndex = 0
 	 * wLength = 64 // in fact just 8 bytes
 	 */
-	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
-	// length == 8 => no STALL?! :O
 	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
 
-	printf("===========\nafter usb control msg:\n");
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
 	hexdump(buf, sizeof(buf));
 
 #if 0

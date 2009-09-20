@@ -157,7 +157,9 @@ struct general_td {
 
 	/* required by software */
 	u32 bufaddr;
-	u16 buflen;
+	u32 buflen;
+	u32 pad1;
+	u32 pad2;
 } ALIGNED(16);
 
 #define	OHCI_TD_BUFFER_ROUNDING			0x00040000
