@@ -56,4 +56,6 @@ u8 hcdi_enqueue(const usb_transfer_descriptor *td);
  */
 u8 hcdi_dequeue(usb_transfer_descriptor *td);
 
+void hcdi_fire(void);
+
 #endif /* __HOST_H */

@@ -149,10 +149,15 @@ struct endpoint_descriptor {
 
 
 struct general_td {
+	/* required by HC */
 	u32 flags;
 	u32 cbp;
 	u32 nexttd;
 	u32 be;
+
+	/* required by software */
+	u32 bufaddr;
+	u16 buflen;
 } ALIGNED(16);
 
 #define	OHCI_TD_BUFFER_ROUNDING			0x00040000

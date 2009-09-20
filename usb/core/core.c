@@ -425,6 +425,7 @@ u16 usb_submit_irp(usb_irp *irp)
 
 		break;
 	}
+	hcdi_fire();
 
 	return 1;
 }
