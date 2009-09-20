@@ -172,7 +172,52 @@ static void dbg_td_flag(u32 flag)
 	printf("********************************************************\n");
 }
 
+static void generel_td_fill(struct general_td *dest, usb_transfer_descriptor *src)
+{
+	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(dest->cbp))), src->buffer, src->actlen); 
+	dest->flags &= ACCESS_LE(~OHCI_TD_DIRECTION_PID_MASK);
+	switch(src->pid) {
+		case USB_PID_SETUP:
+			printf("pid_setup\n");
+			dest->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP);
+			dest->flags |= ACCESS_LE(OHCI_TD_TOGGLE_0);
+			dest->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
+			break;
+		case USB_PID_OUT:
+			printf("pid_out\n");
+			dest->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_OUT);
+			dest->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
 
+			/*
+			 * TODO: just temporary solution!
+			 * there can be also regular PID_OUT pakets
+			 */
+			dest->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
+			break;
+		case USB_PID_IN:
+			printf("pid_in\n");
+			dest->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
+			dest->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
+			/*
+			 * let the endpoint do the togglestuff!
+			 * TODO: just temporary solution!
+			 * there can be also inregular PID_IN pakets (@Status Stage)
+			 */
+			dest->flags |= ACCESS_LE(OHCI_TD_TOGGLE_CARRY);
+#if 0
+			/* should be done by HC!
+			 * first pid_in start with DATA0 */
+			 */
+			dummyconfig.headp = ACCESS_LE( src->togl ?
+					ACCESS_LE(dummyconfig.headp) | OHCI_ENDPOINT_TOGGLE_CARRY :
+					ACCESS_LE(dummyconfig.headp) & ~OHCI_ENDPOINT_TOGGLE_CARRY);
+#endif
+			break;
+	}
+	dest->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
+	sync_after_write(dest, sizeof(struct general_td));
+	sync_after_write((void*) phys_to_virt(ACCESS_LE(dest->cbp)), src->actlen);
+}
 
 /**
  * Enqueue a transfer descriptor.
@@ -197,64 +242,13 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(&dummyconfig));
 	} else {
 		sync_before_read(&dummyconfig, 16);
-		dummyconfig.flags |= ACCESS_LE(OHCI_ENDPOINT_SKIP);
 		printf("HALTED set?: %d\n", ACCESS_LE(dummyconfig.headp)&OHCI_ENDPOINT_HALTED);
-		sync_after_write(&dummyconfig, 16);
-
-		udelay(2000);
 		dummyconfig.headp = ACCESS_LE(0);
 		sync_after_write(&dummyconfig, 16);
 	}
 
-	sync_before_read(&hcca_oh0, 256);
-	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
-	printf("HCCA->frame_no: %d\nhcca->hccapad1: %d\n",
-			((ACCESS_LE(hcca_oh0.frame_no) & 0xffff)>>16),
-			ACCESS_LE(hcca_oh0.frame_no)&0x0000ffff );
-
 	struct general_td *tmptd = allocate_general_td(td->actlen);
-	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))), td->buffer, td->actlen); 
-
-	tmptd->flags &= ACCESS_LE(~OHCI_TD_DIRECTION_PID_MASK);
-	switch(td->pid) {
-		case USB_PID_SETUP:
-			printf("pid_setup\n");
-			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP);
-			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_0);
-			tmptd->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
-			break;
-		case USB_PID_OUT:
-			printf("pid_out\n");
-			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_OUT);
-			tmptd->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
-
-			/*
-			 * TODO: just temporary solution!
-			 * there can be also regular PID_OUT pakets
-			 */
-			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
-			break;
-		case USB_PID_IN:
-			printf("pid_in\n");
-			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
-			tmptd->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
-			/*
-			 * let the endpoint do the togglestuff!
-			 * TODO: just temporary solution!
-			 * there can be also inregular PID_IN pakets (@Status Stage)
-			 */
-			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_CARRY);
-#if 0
-			/* should be done by HC!
-			 * first pid_in start with DATA0 */
-			 */
-			dummyconfig.headp = ACCESS_LE( td->togl ?
-					ACCESS_LE(dummyconfig.headp) | OHCI_ENDPOINT_TOGGLE_CARRY :
-					ACCESS_LE(dummyconfig.headp) & ~OHCI_ENDPOINT_TOGGLE_CARRY);
-#endif
-			break;
-	}
-	tmptd->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
+	generel_td_fill(tmptd, td);
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));
@@ -263,12 +257,8 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("tmptd->cbp hexdump (before) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
 	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 
-	sync_after_write(tmptd, sizeof(struct general_td));
-	sync_after_write((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-
 
 #define ED_MASK ((u32)~0x0f) 
-	dummyconfig.flags &= ACCESS_LE(~OHCI_ENDPOINT_SKIP);
 	dummyconfig.headp |= ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
 
 	printf("dummyconfig hexdump (before) 0x%08X:\n", &dummyconfig);
@@ -276,14 +266,9 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 
 	sync_after_write(&dummyconfig, 16);
 
-	printf("OHCI_CTRL_CLE: 0x%08X || ", read32(OHCI0_HC_CONTROL)&OHCI_CTRL_CLE);
-	printf("OHCI_CLF: 0x%08X\n", read32(OHCI0_HC_COMMAND_STATUS)&OHCI_CLF);
+	/* trigger control list */
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
-
-	//printf("+++++++++++++++++++++++++++++\n");
-	/* spin until the controller is done with the control list */
-	//printf("current: 0x%08X\n", current);
 
 	//don't use this quirk stuff here!
 #if 1
@@ -310,21 +295,9 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("dummyconfig hexdump (after) 0x%08X:\n", &dummyconfig);
 	hexdump((void*) &dummyconfig, 16);
 
-	sync_before_read(&hcca_oh0, 256);
-	printf("done head (nach sync): 0x%08X\n", ACCESS_LE(hcca_oh0.done_head));
-
-	struct general_td* donetd = phys_to_virt(ACCESS_LE(hcca_oh0.done_head)&~1);
-	sync_before_read(donetd, 16);
-	printf("done head hexdump: 0x%08X\n", donetd);
-	hexdump((void*) donetd, 16);
-
 	u32 newlen = 0;
 	if(td->actlen) {
-		sync_before_read((void*) tmptdbuffer, td->actlen);
-		newlen = (u32)phys_to_virt(ACCESS_LE(tmptd->cbp)) - tmptdbuffer;
-		printf("WOOOOT newlen: %d\n", newlen);
-		hexdump((void*) tmptdbuffer, newlen);
-		printf("OLD length: %d\n", td->actlen);
+		printf("tmptdbuffer: %d\n", td->actlen);
 		hexdump((void*) tmptdbuffer, td->actlen);
 	}
 
@@ -332,6 +305,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	printf("td->buffer: 0x%08X\np2v(A_L(tmptd->cbp: 0x%08X\ntd->actlen: %d\n", (void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
 	(void) memcpy((void*) (td->buffer), (void*) tmptdbuffer, td->actlen);
 
+	/* disable control list */
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 
 	/* 

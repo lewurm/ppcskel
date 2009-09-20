@@ -118,7 +118,7 @@ usb_device *usb_add_device()
 	 */
 	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
 	// length == 8 => no STALL?! :O
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 8, buf, 8, 0);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
 
 	printf("===========\nafter usb control msg:\n");
 	hexdump(buf, sizeof(buf));
