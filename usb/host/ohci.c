@@ -172,7 +172,7 @@ static void dbg_td_flag(u32 flag)
 	printf("********************************************************\n");
 }
 
-static void generel_td_fill(struct general_td *dest, usb_transfer_descriptor *src)
+static void general_td_fill(struct general_td *dest, usb_transfer_descriptor *src)
 {
 	(void) memcpy((void*) (phys_to_virt(ACCESS_LE(dest->cbp))), src->buffer, src->actlen); 
 	dest->flags &= ACCESS_LE(~OHCI_TD_DIRECTION_PID_MASK);
@@ -219,15 +219,48 @@ static void generel_td_fill(struct general_td *dest, usb_transfer_descriptor *sr
 	sync_after_write((void*) phys_to_virt(ACCESS_LE(dest->cbp)), src->actlen);
 }
 
+static void dump_address(void *addr, u32 size, const char* str)
+{
+	sync_before_read(addr, size);
+	printf("%s hexdump @ 0x%08X:\n", str, addr);
+	hexdump(addr, size);
+}
+
 /**
  * Enqueue a transfer descriptor.
  */
-u8 first = 1;
+u8 first = 0;
 u8 hcdi_enqueue(usb_transfer_descriptor *td) {
+	static struct general_td *tSetup,*tData;
+	static u32 tSetupbuffer, tDatabuffer, tStatusbuffer;
+	static u32 tSetupblen, tDatablen, tStatusblen;
+
+	if(first == 0) {
+		printf("step 0\n");
+		tSetup = allocate_general_td(td->actlen);
+		general_td_fill(tSetup, td);
+		tSetupbuffer = (u32) phys_to_virt(ACCESS_LE(tSetup->cbp)); 
+		tSetupblen = td->actlen;
+		first++;
+		return 0;
+	}
+	if(first == 1) {
+		printf("step 1\n");
+		tData = allocate_general_td(td->actlen);
+		general_td_fill(tData, td);
+		tDatabuffer = (u32) phys_to_virt(ACCESS_LE(tData->cbp)); 
+		tDatablen = td->actlen;
+		first++;
+		return 0;
+	}
+	struct general_td *tStatus = allocate_general_td(td->actlen);
+	general_td_fill(tStatus, td);
+	tStatusbuffer = (u32) phys_to_virt(ACCESS_LE(tStatus->cbp)); 
+	tStatusblen = td->actlen;
+
 	printf(	"===========================\n"
 			"===========================\n");
 	control_quirk(); //required? YES! :O ... erm... or no? :/ ... in fact I have no idea
-	u32 tmptdbuffer;
 
 	static struct endpoint_descriptor dummyconfig;
 	if(first) {
@@ -247,24 +280,26 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 		sync_after_write(&dummyconfig, 16);
 	}
 
-	struct general_td *tmptd = allocate_general_td(td->actlen);
-	generel_td_fill(tmptd, td);
-
-	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
-	hexdump(tmptd, sizeof(struct general_td));
-	//save buffer adress here; HC may change tmptd->cbp
-	tmptdbuffer = (u32) phys_to_virt(ACCESS_LE(tmptd->cbp)); 
-	printf("tmptd->cbp hexdump (before) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
-	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-
-
 #define ED_MASK ((u32)~0x0f) 
-	dummyconfig.headp |= ACCESS_LE(virt_to_phys((void*) ((u32)tmptd & ED_MASK)));
+	dummyconfig.headp |= ACCESS_LE(virt_to_phys((void*) ((u32)tSetup & ED_MASK)));
+	tSetup->nexttd = ACCESS_LE(virt_to_phys((void*) ((u32)tData & ED_MASK)));
+	tData->nexttd = ACCESS_LE(virt_to_phys((void*) ((u32)tStatus & ED_MASK)));
 
-	printf("dummyconfig hexdump (before) 0x%08X:\n", &dummyconfig);
-	hexdump((void*) &dummyconfig, 16);
+	dump_address(tSetup, sizeof(struct general_td), "tSetup(before)");
+	dump_address((void*) phys_to_virt(ACCESS_LE(tSetup->cbp)), tSetupblen, "tSetup->cbp(before)");
+
+	dump_address(tData, sizeof(struct general_td), "tData(before)");
+	dump_address((void*) phys_to_virt(ACCESS_LE(tData->cbp)), tDatablen, "tData->cbp(before)");
+
+	dump_address(tStatus, sizeof(struct general_td), "tStatus(before)");
+	dump_address((void*) phys_to_virt(ACCESS_LE(tStatus->cbp)), tStatusblen, "tStatus->cbp(before)");
+
+	dump_address(&dummyconfig, sizeof(struct endpoint_descriptor), "dummyconfig(before)");
 
 	sync_after_write(&dummyconfig, 16);
+	sync_after_write(tSetup, sizeof(struct general_td));
+	sync_after_write(tData, sizeof(struct general_td));
+	sync_after_write(tStatus, sizeof(struct general_td));
 
 	/* trigger control list */
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
@@ -276,34 +311,28 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	}
 #endif
 
-	udelay(20000);
+	udelay(1000000);
 	u32 current = read32(OHCI0_HC_CTRL_CURRENT_ED);
 	printf("current: 0x%08X\n", current);
 	printf("+++++++++++++++++++++++++++++\n");
-	udelay(20000);
+	udelay(10000000);
 
-	sync_before_read(tmptd, sizeof(struct general_td));
-	printf("tmptd hexdump (after) 0x%08X:\n", tmptd);
-	hexdump(tmptd, sizeof(struct general_td));
-	dbg_td_flag(ACCESS_LE(tmptd->flags));
+	dump_address(tSetup, sizeof(struct general_td), "tSetup(after)");
+	dump_address((void*) phys_to_virt(ACCESS_LE(tSetup->cbp)), tSetupblen, "tSetup->cbp(after)");
+	dump_address((void*) tSetupbuffer, tSetupblen, "tSetupbuffer");
+	dbg_td_flag(ACCESS_LE(tSetup->flags));
 
-	sync_before_read((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-	printf("tmptd->cbp hexdump (after) 0x%08X:\n", phys_to_virt(ACCESS_LE(tmptd->cbp)));
-	hexdump((void*) phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
+	dump_address(tData, sizeof(struct general_td), "tData(after)");
+	dump_address((void*) phys_to_virt(ACCESS_LE(tData->cbp)), tDatablen, "tData->cbp(after)");
+	dump_address((void*) tDatabuffer, tDatablen, "tDatabuffer");
+	dbg_td_flag(ACCESS_LE(tData->flags));
 
-	sync_before_read(&dummyconfig, 16);
-	printf("dummyconfig hexdump (after) 0x%08X:\n", &dummyconfig);
-	hexdump((void*) &dummyconfig, 16);
+	dump_address(tStatus, sizeof(struct general_td), "tStatus(after)");
+	//dump_address((void*) phys_to_virt(ACCESS_LE(tStatus->cbp)), tStatusblen, "tStatus->cbp(after)");
+	//dump_address((void*) tStatusbuffer, tStatusblen, "tStatusbuffer");
+	dbg_td_flag(ACCESS_LE(tStatus->flags));
 
-	u32 newlen = 0;
-	if(td->actlen) {
-		printf("tmptdbuffer: %d\n", td->actlen);
-		hexdump((void*) tmptdbuffer, td->actlen);
-	}
-
-	sync_before_read((void*) (phys_to_virt(ACCESS_LE(tmptd->cbp))-newlen), td->actlen);
-	printf("td->buffer: 0x%08X\np2v(A_L(tmptd->cbp: 0x%08X\ntd->actlen: %d\n", (void*) (td->buffer), phys_to_virt(ACCESS_LE(tmptd->cbp)), td->actlen);
-	(void) memcpy((void*) (td->buffer), (void*) tmptdbuffer, td->actlen);
+	dump_address(&dummyconfig, sizeof(struct endpoint_descriptor), "dummyconfig(after)");
 
 	/* disable control list */
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
@@ -316,8 +345,8 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 	/* only when a buffer is allocated */
 #if 0
 	if(td->actlen)
-		free((void*)tmptdbuffer);
-	free(tmptd);
+		free((void*)tStatusbuffer);
+	free(tStatus);
 #endif
 	return 0;
 }
