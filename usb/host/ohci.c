@@ -221,16 +221,28 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 			printf("pid_setup\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_SETUP);
 			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_0);
+			tmptd->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
 			break;
 		case USB_PID_OUT:
 			printf("pid_out\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_OUT);
+			tmptd->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
+
+			/*
+			 * TODO: just temporary solution!
+			 * there can be also regular PID_OUT pakets
+			 */
 			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_1);
 			break;
 		case USB_PID_IN:
 			printf("pid_in\n");
 			tmptd->flags |= ACCESS_LE(OHCI_TD_DIRECTION_PID_IN);
-			/* let the endpoint do the togglestuff! */
+			tmptd->flags |= ACCESS_LE(OHCI_TD_BUFFER_ROUNDING);
+			/*
+			 * let the endpoint do the togglestuff!
+			 * TODO: just temporary solution!
+			 * there can be also inregular PID_IN pakets (@Status Stage)
+			 */
 			tmptd->flags |= ACCESS_LE(OHCI_TD_TOGGLE_CARRY);
 #if 0
 			/* should be done by HC!
@@ -242,7 +254,7 @@ u8 hcdi_enqueue(usb_transfer_descriptor *td) {
 #endif
 			break;
 	}
-	tmptd->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7) | OHCI_TD_BUFFER_ROUNDING);
+	tmptd->flags |= ACCESS_LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
 
 	printf("tmptd hexdump (before) 0x%08X:\n", tmptd);
 	hexdump(tmptd, sizeof(struct general_td));

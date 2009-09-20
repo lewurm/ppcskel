@@ -114,10 +114,9 @@ usb_device *usb_add_device()
 	 * bRequest = GET_DESCRIPTOR
 	 * wValue = DEVICE (Descriptor Type)
 	 * wIndex = 0
-	 * wLength = 8 (in Bytes!?)
+	 * wLength = 64 // in fact just 8 bytes
 	 */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 8, buf, 8, 0);
-	//usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE, 0, 64, buf, 8, 0);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
 
 	printf("===========\nafter usb control msg:\n");
 	hexdump(buf, sizeof(buf));
@@ -346,7 +345,7 @@ u16 usb_submit_irp(usb_irp *irp)
 				/* wenn device descriptor von adresse 0 angefragt wird werden nur
 				 * die ersten 8 byte abgefragt
 				 */
-				if (setup->bRequest == GET_DESCRIPTOR && (setup->wValue >> 8) == 1
+				if (setup->bRequest == GET_DESCRIPTOR && (setup->wValue & 0xff) == 1
 						&& td->devaddress == 0) {
 					runloop = 0;					/* stop loop */
 				}
