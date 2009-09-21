@@ -32,7 +32,6 @@ static struct endpoint_descriptor *allocate_endpoint();
 static struct general_td *allocate_general_td();
 static void control_quirk();
 static void dbg_op_state();
-//static void dbg_td_flag(u32 flag);
 static void configure_ports(u8 from_init);
 static void setup_port(u32 reg, u8 from_init);
 
@@ -203,8 +202,8 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 			printf("pid_in\n");
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_IN);
 			if(src->maxp > src->actlen) {
-				printf("round buffer!");
 				dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
+				printf("round buffer!");
 			}
 			/*
 			 * let the endpoint do the togglestuff!
@@ -225,17 +224,21 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 	dest->flags |= LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
 }
 
+#ifdef _DU_OHCI_F
 static void dump_address(void *addr, u32 size, const char* str)
 {
 	printf("%s hexdump (%d) @ 0x%08X:\n", str, size, addr);
 	hexdump(addr, size);
 }
+#endif
 
 static struct endpoint_descriptor _edhead;
 struct endpoint_descriptor *edhead = 0;
 void hcdi_fire()
 {
+#ifdef _DU_OHCI_F
 	printf("<^>  <^>  <^> hcdi_fire(start)\n");
+#endif
 
 	if(edhead == 0)
 		return;
@@ -245,17 +248,22 @@ void hcdi_fire()
 
 	/* sync it all */
 	sync_after_write(edhead, sizeof(struct endpoint_descriptor));
+#ifdef _DU_OHCI_F
 	dump_address(edhead, sizeof(struct endpoint_descriptor), "edhead(before)");
+#endif
 
 	struct general_td *x = phys_to_virt(LE(edhead->headp) & OHCI_ENDPOINT_HEAD_MASK);
-	printf("STRUCT LEN: %d\n", sizeof(struct general_td));
 	while(virt_to_phys(x)) {
 		sync_after_write(x, sizeof(struct general_td));
+#ifdef _DU_OHCI_F
 		dump_address(x, sizeof(struct general_td), "x(before)");
+#endif
 
 		if(x->buflen > 0) {
 			sync_after_write((void*) phys_to_virt(LE(x->cbp)), x->buflen);
+#ifdef _DU_OHCI_F
 			dump_address((void*) phys_to_virt(LE(x->cbp)), x->buflen, "x->cbp(before)");
+#endif
 		}
 		x = phys_to_virt(LE(x->nexttd));
 	}
@@ -268,48 +276,66 @@ void hcdi_fire()
 	/* poll until edhead->headp is null */
 	do {
 		sync_before_read(edhead, sizeof(struct endpoint_descriptor));
+#ifdef _DU_OHCI_F
 		printf("edhead->headp: 0x%08X\n", LE(edhead->headp));
+		udelay(10000);
+#endif
 
 		/* if halted, debug output plz. will break the transfer */
 		if((LE(edhead->headp) & OHCI_ENDPOINT_HALTED)) {
 			n = phys_to_virt(LE(edhead->headp)&~0xf);
 			prev = phys_to_virt((u32)prev);
+#ifdef _DU_OHCI_F
 			printf("halted!\n");
+#endif
 
 			sync_before_read((void*) n, sizeof(struct general_td));
+#ifdef _DU_OHCI_F
 			printf("n: 0x%08X\n", n);
 			dump_address(n, sizeof(struct general_td), "n(after)");
+#endif
 			if(n->buflen > 0) {
 				sync_before_read((void*) n->bufaddr, n->buflen);
+#ifdef _DU_OHCI_F
 				dump_address((void*) n->bufaddr, n->buflen, "n->bufaddr(after)");
+#endif
 			}
 			dbg_td_flag(LE(n->flags));
 
 			sync_before_read((void*) prev, sizeof(struct general_td));
+#ifdef _DU_OHCI_F
 			printf("prev: 0x%08X\n", prev);
 			dump_address(prev, sizeof(struct general_td), "prev(after)");
+#endif
 			if(prev->buflen >0) {
 				sync_before_read((void*) prev->bufaddr, prev->buflen);
+#ifdef _DU_OHCI_F
 				dump_address((void*) prev->bufaddr, prev->buflen, "prev->bufaddr(after)");
+#endif
 			}
+#ifdef _DU_OHCI_F
 			dbg_td_flag(LE(prev->flags));
-
 			printf("halted end!\n");
+#endif
 			return;
 		}
 		prev = (struct general_td*) (LE(edhead->headp)&~0xf);
 	} while(LE(edhead->headp)&~0xf);
 
 	n = phys_to_virt(read32(OHCI0_HC_DONE_HEAD) & ~1);
+#ifdef _DU_OHCI_F
 	printf("hc_done_head: 0x%08X\n", read32(OHCI0_HC_DONE_HEAD));
+#endif
 
 	prev = 0; next = 0;
 	/* reverse done queue */
 	while(virt_to_phys(n) && edhead->tdcount) {
 		sync_before_read((void*) n, sizeof(struct general_td));
+#ifdef _DU_OHCI_F
 		printf("n: 0x%08X\n", n);
 		printf("next: 0x%08X\n", next);
 		printf("prev: 0x%08X\n", prev);
+#endif
 
 		next = n;
 		n = (struct general_td*) phys_to_virt(LE(n->nexttd));
@@ -322,13 +348,18 @@ void hcdi_fire()
 	n = next;
 	prev = 0;
 	while(virt_to_phys(n)) {
+#ifdef _DU_OHCI_F
 		dump_address(n, sizeof(struct general_td), "n(after)");
-
+#endif
 		if(n->buflen > 0) {
 			sync_before_read((void*) n->bufaddr, n->buflen);
+#ifdef _DU_OHCI_F
 			dump_address((void*) n->bufaddr, n->buflen, "n->bufaddr(after)");
+#endif
 		}
+#ifdef _DU_OHCI_F
 		dbg_td_flag(LE(n->flags));
+#endif
 		prev = n;
 		n = (struct general_td*) n->nexttd;
 		free(prev);
@@ -341,14 +372,18 @@ void hcdi_fire()
 
 	edhead = 0;
 
+#ifdef _DU_OHCI_F
 	printf("<^>  <^>  <^> hcdi_fire(end)\n");
+#endif
 }
 
 /**
  * Enqueue a transfer descriptor.
  */
 u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
+#ifdef _DU_OHCI_Q
 	printf("*()*()*()*()*()*()*() hcdi_enqueue(start)\n");
+#endif
 	if(!edhead) {
 		edhead = &_edhead;
 		memset(edhead, 0, sizeof(struct endpoint_descriptor));
@@ -378,11 +413,15 @@ u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
 			n = phys_to_virt(LE(n->nexttd));
 		}
 		n->nexttd = LE(virt_to_phys((void*) ((u32)tdhw & OHCI_ENDPOINT_HEAD_MASK)));
+#ifdef _DU_OHCI_Q
 		printf("n: 0x%08X\n", n);
 		printf("n->nexttd: 0x%08X\n", phys_to_virt(LE(n->nexttd)));
+#endif
 	}
 
+#ifdef _DU_OHCI_Q
 	printf("*()*()*()*()*()*()*() hcdi_enqueue(end)\n");
+#endif
 	return 0;
 }
 
@@ -475,15 +514,19 @@ void hcdi_init()
 
 static void configure_ports(u8 from_init)
 {
+#ifdef _DU_OHCI_RH
 	printf("OHCI0_HC_RH_DESCRIPTOR_A:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_A));
 	printf("OHCI0_HC_RH_DESCRIPTOR_B:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_B));
 	printf("OHCI0_HC_RH_STATUS:\t\t0x%08X\n", read32(OHCI0_HC_RH_STATUS));
 	printf("OHCI0_HC_RH_PORT_STATUS_1:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_1));
 	printf("OHCI0_HC_RH_PORT_STATUS_2:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_2));
+#endif
 
 	setup_port(OHCI0_HC_RH_PORT_STATUS_1, from_init);
 	setup_port(OHCI0_HC_RH_PORT_STATUS_2, from_init);
+#ifdef _DU_OHCI_RH
 	printf("configure_ports done\n");
+#endif
 }
 
 static void setup_port(u32 reg, u8 from_init)
@@ -497,7 +540,9 @@ static void setup_port(u32 reg, u8 from_init)
 		/* clear CSC flag, set PES and start port reset (PRS) */
 		write32(reg, RH_PS_PES);
 		while(!(read32(reg) & RH_PS_PES)) {
+#ifdef _DU_OHCI_RH
 			printf("fu\n");
+#endif
 			return;
 		}
 
@@ -505,7 +550,9 @@ static void setup_port(u32 reg, u8 from_init)
 
 		/* spin until port reset is complete */
 		while(!(read32(reg) & RH_PS_PRSC)); // hint: it may stuck here
+#ifdef _DU_OHCI_RH
 		printf("loop done\n");
+#endif
 
 		(void) usb_add_device();
 	}

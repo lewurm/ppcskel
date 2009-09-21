@@ -127,6 +127,10 @@ usb_device *usb_add_device()
 
 	/* setup real ep0 fifo size */
 	dev->bMaxPacketSize0 = (u8) buf[7];
+	if(!(u8)buf[7]) {
+		printf("FU\n");
+		return (void*)1;
+	}
 
 	/* save real length of device descriptor */
 	devdescr_size = (u8) buf[0];
@@ -140,6 +144,7 @@ usb_device *usb_add_device()
 
 
 	/* get complete device descriptor */
+	memset(buf, 0, 64);
 	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8, 0);
 
 	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
@@ -161,14 +166,25 @@ usb_device *usb_add_device()
 			"bcdDevice 0x%04X\n", dev->bDeviceClass, 
 			dev->bDeviceSubClass, dev->bDeviceProtocoll,
 			dev->idVendor, dev->idProduct, dev->bcdDevice);
-	/* for lewurms keyboard it should be:
-	 * bDeviceClass			0
-	 * bDeviceSubClass		0
-	 * bDeviceClass			0
-	 * idVendor						0x049f
-	 * idProduct					0x000e
-	 * bcdDevice						1.00
-	 */
+
+#if 0
+	memset(buf, 0, 64);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8)|2, 0, 0x20, buf, 8, 0);
+	hexdump(buf, sizeof(buf));
+	printf("String Descriptor [1]: ");
+	u8 i;
+	for (i=2; i<buf[0]; i+=2)
+		printf("%c", buf[i]);
+	printf("\n");
+#endif
+
+	/*
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8) | 2, 0, 0x20, buf, 8, 0);
+	printf("String Descriptor [2]: ");
+	for (i=2; i<buf[0]; i+=2)
+		printf("%c", buf[i]);
+	printf("\n");
+	*/
 
 	// string descriptoren werden nicht im arbeitsspeicher gehalten -> on demand mit 
 	// entprechenden funktionen
