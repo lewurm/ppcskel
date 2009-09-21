@@ -288,10 +288,6 @@ void hcdi_fire()
 	n = next;
 	prev = 0;
 	while(virt_to_phys(n)) {
-		if(prev) {
-			free(prev);
-		}
-
 		dump_address(n, sizeof(struct general_td), "n(after)");
 
 		if(n->buflen > 0) {
@@ -301,8 +297,6 @@ void hcdi_fire()
 		dbg_td_flag(LE(n->flags));
 		prev = n;
 		n = (struct general_td*) n->nexttd;
-	}
-	if(prev) {
 		free(prev);
 	}
 
@@ -373,6 +367,16 @@ void hcdi_init()
 
 	/* disable hc interrupts */
 	set32(OHCI0_HC_INT_DISABLE, OHCI_INTR_MIE);
+
+#if 1
+	/* after a warm start we have some really odd memory issues.
+	 * some malloc/free/sync/mmu fail?! no idea!
+	 */
+	if((read32(OHCI0_HC_CONTROL) & OHCI_CTRL_HCFS) != OHCI_USB_RESET) {
+		(void) malloc(256);
+		printf("WTF malloc\n");
+	}
+#endif
 
 	/* save fmInterval and calculate FSMPS */
 #define FSMP(fi) (0x7fff & ((6 * ((fi) - 210)) / 7))

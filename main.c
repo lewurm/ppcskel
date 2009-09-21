@@ -100,8 +100,6 @@ int main(void)
 	VIDEO_SetFrameBuffer(get_xfb());
 	VISetupEncoder();
 
-	usb_init();
-
 	u32 version = ipc_getvers();
 	u16 mini_version_major = version >> 16 & 0xFFFF;
 	u16 mini_version_minor = version & 0xFFFF;
@@ -115,18 +113,13 @@ int main(void)
 			; // better ideas welcome!
 	}
 
+	usb_init();
+
 	/*
     print_str_noscroll(112, 112, "ohai, world!\n");
 	testOTP();
 	printf("bye, world!\n");
 	*/
-
-	while(1) {
-		// just to get sure we are still in this loop
-		//_CPU_ISR_Enable() // don't know why this is needed...
-		//udelay(100000);
-		//printf("x");
-	}
 
 	return 0;
 }
