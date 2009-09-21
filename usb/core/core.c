@@ -167,9 +167,9 @@ usb_device *usb_add_device()
 			dev->bDeviceSubClass, dev->bDeviceProtocoll,
 			dev->idVendor, dev->idProduct, dev->bcdDevice);
 
-#if 0
+#if 1
 	memset(buf, 0, 64);
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8)|2, 0, 0x20, buf, 8, 0);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8)|2, 0, 0x1a, buf, 8, 0);
 	hexdump(buf, sizeof(buf));
 	printf("String Descriptor [1]: ");
 	u8 i;
@@ -341,7 +341,8 @@ u16 usb_submit_irp(usb_irp *irp)
 		/* check bit 7 of bmRequestType */
 		if (bmRequestType & 0x80) { 
 			/* schleife die die tds generiert */
-			while (runloop || (restlength < 1)) {
+			while (runloop && (restlength > 0)) {
+				printf("restlength: %d\t irp->epsize: %d\n", restlength, irp->epsize);
 				td = usb_create_transfer_descriptor(irp);
 				td->actlen = irp->epsize;
 				/* stop loop if all bytes are send */

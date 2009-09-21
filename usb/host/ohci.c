@@ -18,6 +18,9 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "host.h"
 #include "../usbspec/usb11spec.h"
 
+/* activate control_quirk (from MIKE) */
+//#define _USE_C_Q
+
 /* macro for accessing u32 variables that need to be in little endian byte order;
  *
  * whenever you read or write from an u32 field that the ohci host controller
@@ -28,9 +31,7 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 			   (((dword) & 0x0000FF00) << 8)  | \
 			   (((dword) & 0x000000FF) << 24) )
 
-static struct endpoint_descriptor *allocate_endpoint();
 static struct general_td *allocate_general_td();
-static void control_quirk();
 static void dbg_op_state();
 static void configure_ports(u8 from_init);
 static void setup_port(u32 reg, u8 from_init);
@@ -38,6 +39,7 @@ static void setup_port(u32 reg, u8 from_init);
 static struct ohci_hcca hcca_oh0;
 
 
+#ifdef _USE_C_Q
 static struct endpoint_descriptor *allocate_endpoint()
 {
 	struct endpoint_descriptor *ep;
@@ -47,6 +49,7 @@ static struct endpoint_descriptor *allocate_endpoint()
 	ep->headp = ep->tailp = ep->nexted = LE(0);
 	return ep;
 }
+#endif
 
 static struct general_td *allocate_general_td()
 {
@@ -59,6 +62,7 @@ static struct general_td *allocate_general_td()
 	return td;
 }
 
+#ifdef _USE_C_Q
 static void control_quirk()
 {
 	static struct endpoint_descriptor *ed = 0; /* empty ED */
@@ -132,6 +136,7 @@ static void control_quirk()
 		printf("nohead!\n");
 	}
 }
+#endif
 
 
 static void dbg_op_state() 
@@ -203,7 +208,7 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_IN);
 			if(src->maxp > src->actlen) {
 				dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
-				printf("round buffer!");
+				printf("round buffer!\n");
 			}
 			/*
 			 * let the endpoint do the togglestuff!
@@ -211,14 +216,6 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 			 * there can be also inregular PID_IN pakets (@Status Stage)
 			 */
 			dest->flags |= LE(OHCI_TD_TOGGLE_CARRY);
-#if 0
-			/* should be done by HC!
-			 * first pid_in start with DATA0 */
-			 */
-			dummyconfig.headp = LE( src->togl ?
-					LE(dummyconfig.headp) | OHCI_ENDPOINT_TOGGLE_CARRY :
-					LE(dummyconfig.headp) & ~OHCI_ENDPOINT_TOGGLE_CARRY);
-#endif
 			break;
 	}
 	dest->flags |= LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
@@ -243,7 +240,11 @@ void hcdi_fire()
 	if(edhead == 0)
 		return;
 
-	control_quirk(); //required? YES! :O ... erm... or no? :/ ... in fact I have no idea
+#ifdef _USE_C_Q
+	required? YES! :O ... erm... or no? :/ ... in fact I have no idea
+	control_quirk(); 
+#endif
+
 	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
 
 	/* sync it all */
