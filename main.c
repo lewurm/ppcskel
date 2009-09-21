@@ -27,6 +27,14 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 
 #define MINIMUM_MINI_VERSION 0x00010001
 
+/* AES registers for our example */
+#define		AES_REG_BASE		0xd020000
+#define		AES_CMD			(AES_REG_BASE + 0x000)
+#define		AES_SRC			(AES_REG_BASE + 0x004)
+#define		AES_DEST		(AES_REG_BASE + 0x008)
+#define		AES_KEY			(AES_REG_BASE + 0x00c)
+#define		AES_IV			(AES_REG_BASE + 0x010)
+
 otp_t otp;
 seeprom_t seeprom;
 
@@ -76,6 +84,52 @@ void testOTP(void)
 	hexdump(&seeprom, sizeof(seeprom));
 }
 
+/* idea of this simple AES engine test:
+ * show how the malloc/free pair fails concerning dma access from i/o devices -
+ * we don't use real encryption mode here but just copy the data from source to
+ * destination - this is achieved by setting the ENA flag in AES_CMD to zero. */
+void simple_aes_copy(void)
+{
+	/* first, allocate memory for source and destination */
+	u8* source = memalign(16, 16); // 16 byte aligned, 16 byte length
+	u8* destination = memalign(16, 16); // 16 byte aligned, 16 byte length
+
+	/* fill source with some evil data, and set destination to all the same bytes ('?')
+	 * to see quickly see whether the copying has worked or not */
+	memset(source, '\0', 16);
+	strlcpy(source, "please copy me", 16);
+	memset(destination, '?', 16);
+
+	printf("----- source addr: %08X, dest addr: %08X -----\n", source, destination);
+	hexdump(source, 16);
+	hexdump(destination, 16);
+
+	/* reset aes controller */
+	write32(AES_CMD, 0);
+	while(read32(AES_CMD) != 0);
+
+	/* flush buffers and tell the controller their addresses */
+	sync_after_write(source, 16);
+	sync_after_write(destination, 16);
+	write32(AES_SRC, virt_to_phys(source));
+	write32(AES_DEST, virt_to_phys(destination));
+
+	/* fire up copying! */
+	write32(AES_CMD, 0x80000000);
+	while(read32(AES_CMD) & 0x80000000);
+
+	/* show result */
+	printf("result is there:\n");
+	sync_before_read(source, 16); // should not be needed, but just to get sure...
+	sync_before_read(destination, 16);
+	hexdump(source, 16);
+	hexdump(destination, 16);
+
+	/* now THIS should show that something is wrong with memory (MMU stuff etc.?) */
+	free(source);
+	free(destination);
+}
+
 int main(void)
 {
 	int vmode = -1;
@@ -89,7 +143,7 @@ int main(void)
 	ipc_slowping();
 
 	gecko_init();
-    input_init();
+	input_init();
 	init_fb(vmode);
 
 	VIDEO_Init(vmode);
@@ -109,11 +163,13 @@ int main(void)
 			; // better ideas welcome!
 	}
 
-    print_str_noscroll(112, 112, "ohai, world!\n");
-
-	testOTP();
-
-	printf("bye, world!\n");
+	/* perform 3 tests... */
+	u8 i;
+	for (i=0; i<3; i++) {
+		printf("======== aes copy test (%d) ========\n", i+1);
+		simple_aes_copy();
+		printf("====================================\n\n");
+	}
 
 	return 0;
 }

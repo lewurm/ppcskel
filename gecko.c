@@ -209,6 +209,7 @@ int printf(const char *fmt, ...) {
 	char buffer[1024];
 	int i;
 
+	udelay(100); // evil hack again...
 	va_start(args, fmt);
 	i = vsprintf(buffer, fmt, args);
 	va_end(args);
