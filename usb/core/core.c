@@ -90,7 +90,8 @@ usb_device *usb_add_device()
 {
 	usb_device *dev = (usb_device *) malloc(sizeof(usb_device));
 	dev->address = 0;
-	dev->bMaxPacketSize0 = 8; 	/* send at first time only 8 bytes */
+	/* send at first time only 8 bytes */
+	dev->bMaxPacketSize0 = 8;
 
 	dev->epSize[0] = 64;
 	dev->epSize[1] = 64;
@@ -121,21 +122,28 @@ usb_device *usb_add_device()
 	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
 	hexdump(buf, sizeof(buf));
 
-#if 0
 	u8 devdescr_size;
 	u8 address = usb_next_address();
-	dev->bMaxPacketSize0 = (u8) buf[7] ? (u8) buf[7] : 1; //dirty?	/* setup real ep0 fifo size */
-	devdescr_size = (u8) buf[0];	/* save real length of device descriptor */
+
+	/* setup real ep0 fifo size */
+	dev->bMaxPacketSize0 = (u8) buf[7];
+
+	/* save real length of device descriptor */
+	devdescr_size = (u8) buf[0];
 
 	/* define new adress */
-	/*
-	usb_control_msg(dev, 0x00, SET_ADDRESS, address << 8, 0, 0, buf, 8, 0);
+	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 8, 0);
 	dev->address = address;
-	*/
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
+	printf("address: %d\n", address);
+
 
 	/* get complete device descriptor */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8,
-									0);
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8, 0);
+
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
 
 	/* save only really neccessary values for this small usbstack */
 	dev->bDeviceClass = (u8) buf[4];
@@ -162,11 +170,11 @@ usb_device *usb_add_device()
 	 * bcdDevice						1.00
 	 */
 
-
 	// string descriptoren werden nicht im arbeitsspeicher gehalten -> on demand mit 
 	// entprechenden funktionen
 	// hier muss man noch mehr abholen, konfigurationene, interfaces und endpunkte
 
+#if 0
 	/* add device to device list */
 	element *tmp = (element *) malloc(sizeof(element));
 	tmp->data = (void *) dev;
@@ -317,18 +325,18 @@ u16 usb_submit_irp(usb_irp *irp)
 		/* check bit 7 of bmRequestType */
 		if (bmRequestType & 0x80) { 
 			/* schleife die die tds generiert */
-			while (runloop) {
+			while (runloop || (restlength < 1)) {
 				td = usb_create_transfer_descriptor(irp);
 				td->actlen = irp->epsize;
 				/* stop loop if all bytes are send */
-				if (restlength <= irp->epsize) {
+				if (restlength < irp->epsize) {
 					runloop = 0;
 					td->actlen = restlength;
 				}
 
 				td->buffer = td_buf_ptr;
 				/* move pointer for next packet */
-				td_buf_ptr = td_buf_ptr + irp->epsize;
+				td_buf_ptr += irp->epsize;
 
 				td->pid = USB_PID_IN;
 				td->togl = togl;

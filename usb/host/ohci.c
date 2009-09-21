@@ -202,7 +202,10 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 		case USB_PID_IN:
 			printf("pid_in\n");
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_IN);
-			dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
+			if(src->maxp > src->actlen) {
+				printf("round buffer!");
+				dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
+			}
 			/*
 			 * let the endpoint do the togglestuff!
 			 * TODO: just temporary solution!
@@ -261,16 +264,46 @@ void hcdi_fire()
 	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
 	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
 
+	struct general_td *n=0, *prev = 0, *next = 0;
 	/* poll until edhead->headp is null */
 	do {
 		sync_before_read(edhead, sizeof(struct endpoint_descriptor));
 		printf("edhead->headp: 0x%08X\n", LE(edhead->headp));
+
+		/* if halted, debug output plz. will break the transfer */
+		if((LE(edhead->headp) & OHCI_ENDPOINT_HALTED)) {
+			n = phys_to_virt(LE(edhead->headp)&~0xf);
+			prev = phys_to_virt((u32)prev);
+			printf("halted!\n");
+
+			sync_before_read((void*) n, sizeof(struct general_td));
+			printf("n: 0x%08X\n", n);
+			dump_address(n, sizeof(struct general_td), "n(after)");
+			if(n->buflen > 0) {
+				sync_before_read((void*) n->bufaddr, n->buflen);
+				dump_address((void*) n->bufaddr, n->buflen, "n->bufaddr(after)");
+			}
+			dbg_td_flag(LE(n->flags));
+
+			sync_before_read((void*) prev, sizeof(struct general_td));
+			printf("prev: 0x%08X\n", prev);
+			dump_address(prev, sizeof(struct general_td), "prev(after)");
+			if(prev->buflen >0) {
+				sync_before_read((void*) prev->bufaddr, prev->buflen);
+				dump_address((void*) prev->bufaddr, prev->buflen, "prev->bufaddr(after)");
+			}
+			dbg_td_flag(LE(prev->flags));
+
+			printf("halted end!\n");
+			return;
+		}
+		prev = (struct general_td*) (LE(edhead->headp)&~0xf);
 	} while(LE(edhead->headp)&~0xf);
 
-	struct general_td *n = phys_to_virt(read32(OHCI0_HC_DONE_HEAD) & ~1);
+	n = phys_to_virt(read32(OHCI0_HC_DONE_HEAD) & ~1);
 	printf("hc_done_head: 0x%08X\n", read32(OHCI0_HC_DONE_HEAD));
 
-	struct general_td *prev = 0, *next = 0;
+	prev = 0; next = 0;
 	/* reverse done queue */
 	while(virt_to_phys(n) && edhead->tdcount) {
 		sync_before_read((void*) n, sizeof(struct general_td));
