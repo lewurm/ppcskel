@@ -228,6 +228,7 @@ static void dump_address(void *addr, u32 size, const char* str)
 	hexdump(addr, size);
 }
 
+static struct endpoint_descriptor _edhead;
 struct endpoint_descriptor *edhead = 0;
 void hcdi_fire()
 {
@@ -305,7 +306,6 @@ void hcdi_fire()
 
 	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
 
-	free(edhead);
 	edhead = 0;
 
 	printf("<^>  <^>  <^> hcdi_fire(end)\n");
@@ -317,7 +317,8 @@ void hcdi_fire()
 u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
 	printf("*()*()*()*()*()*()*() hcdi_enqueue(start)\n");
 	if(!edhead) {
-		edhead = allocate_endpoint();
+		edhead = &_edhead;
+		memset(edhead, 0, sizeof(struct endpoint_descriptor));
 		edhead->flags = LE(OHCI_ENDPOINT_GENERAL_FORMAT);
 		edhead->headp = edhead->tailp = edhead->nexted = LE(0);
 		edhead->flags |= LE(OHCI_ENDPOINT_LOW_SPEED |
@@ -367,16 +368,6 @@ void hcdi_init()
 
 	/* disable hc interrupts */
 	set32(OHCI0_HC_INT_DISABLE, OHCI_INTR_MIE);
-
-#if 1
-	/* after a warm start we have some really odd memory issues.
-	 * some malloc/free/sync/mmu fail?! no idea!
-	 */
-	if((read32(OHCI0_HC_CONTROL) & OHCI_CTRL_HCFS) != OHCI_USB_RESET) {
-		(void) malloc(256);
-		printf("WTF malloc\n");
-	}
-#endif
 
 	/* save fmInterval and calculate FSMPS */
 #define FSMP(fi) (0x7fff & ((6 * ((fi) - 210)) / 7))
