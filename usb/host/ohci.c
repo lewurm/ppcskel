@@ -18,8 +18,8 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "host.h"
 #include "../usbspec/usb11spec.h"
 
-/* activate control_quirk (from MIKE) */
-//#define _USE_C_Q
+/* activate control_quirk */
+#define _USE_C_Q
 
 /* macro for accessing u32 variables that need to be in little endian byte order;
  *
@@ -39,18 +39,6 @@ static void setup_port(u32 reg, u8 from_init);
 static struct ohci_hcca hcca_oh0;
 
 
-#ifdef _USE_C_Q
-static struct endpoint_descriptor *allocate_endpoint()
-{
-	struct endpoint_descriptor *ep;
-	ep = (struct endpoint_descriptor *)memalign(16, sizeof(struct endpoint_descriptor));
-	memset(ep, 0, sizeof(struct endpoint_descriptor));
-	ep->flags = LE(OHCI_ENDPOINT_GENERAL_FORMAT);
-	ep->headp = ep->tailp = ep->nexted = LE(0);
-	return ep;
-}
-#endif
-
 static struct general_td *allocate_general_td()
 {
 	struct general_td *td;
@@ -61,82 +49,6 @@ static struct general_td *allocate_general_td()
 	td->cbp = td->be = LE(0);
 	return td;
 }
-
-#ifdef _USE_C_Q
-static void control_quirk()
-{
-	static struct endpoint_descriptor *ed = 0; /* empty ED */
-	static struct general_td *td = 0; /* dummy TD */
-	u32 head;
-	u32 current;
-	u32 status;
-
-	/*
-	 * One time only.
-	 * Allocate and keep a special empty ED with just a dummy TD.
-	 */
-	if (!ed) {
-		ed = allocate_endpoint();
-		if (!ed)
-			return;
-
-		td = allocate_general_td(0);
-		if (!td) {
-			free(ed);
-			ed = NULL;
-			return;
-		}
-
-		ed->tailp = ed->headp = LE(virt_to_phys((void*) ((u32)td & OHCI_ENDPOINT_HEAD_MASK)));
-		ed->flags |= LE(OHCI_ENDPOINT_DIRECTION_OUT);
-	}
-
-	/*
-	 * The OHCI USB host controllers on the Nintendo Wii
-	 * video game console stop working when new TDs are
-	 * added to a scheduled control ED after a transfer has
-	 * has taken place on it.
-	 *
-	 * Before scheduling any new control TD, we make the
-	 * controller happy by always loading a special control ED
-	 * with a single dummy TD and letting the controller attempt
-	 * the transfer.
-	 * The controller won't do anything with it, as the special
-	 * ED has no TDs, but it will keep the controller from failing
-	 * on the next transfer.
-	 */
-	head = read32(OHCI0_HC_CTRL_HEAD_ED);
-	if (head) {
-		printf("head: 0x%08X\n", head);
-		/*
-		 * Load the special empty ED and tell the controller to
-		 * process the control list.
-		 */
-		sync_after_write(ed, 16);
-		sync_after_write(td, 16);
-		write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(ed));
-
-		status = read32(OHCI0_HC_CONTROL);
-		set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
-		write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
-
-		/* spin until the controller is done with the control list */
-		current = read32(OHCI0_HC_CTRL_CURRENT_ED);
-		while(!current) {
-			udelay(10);
-			current = read32(OHCI0_HC_CTRL_CURRENT_ED);
-		}
-
-		printf("current: 0x%08X\n", current);
-			
-		/* restore the old control head and control settings */
-		write32(OHCI0_HC_CONTROL, status);
-		write32(OHCI0_HC_CTRL_HEAD_ED, head);
-	} else {
-		printf("nohead!\n");
-	}
-}
-#endif
 
 
 static void dbg_op_state() 
@@ -157,6 +69,7 @@ static void dbg_op_state()
 	}
 }
 
+#ifdef _DU_OHCI_Q
 static void dbg_td_flag(u32 flag)
 {
 	printf("**************** dbg_td_flag: 0x%08X ***************\n", flag);
@@ -168,6 +81,7 @@ static void dbg_td_flag(u32 flag)
 	printf(" R: %X\n", (flag>>18)&1);
 	printf("********************************************************\n");
 }
+#endif
 
 static void general_td_fill(struct general_td *dest, const usb_transfer_descriptor *src)
 {
@@ -249,8 +163,8 @@ void hcdi_fire()
 		return;
 
 #ifdef _USE_C_Q
-	required? YES! :O ... erm... or no? :/ ... in fact I have no idea
-	control_quirk(); 
+	/* quirk... 11ms seems to be a minimum :O */
+	udelay(11000);
 #endif
 
 	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
@@ -309,7 +223,9 @@ void hcdi_fire()
 				dump_address((void*) n->bufaddr, n->buflen, "n->bufaddr(after)");
 #endif
 			}
+#ifdef _DU_OHCI_F
 			dbg_td_flag(LE(n->flags));
+#endif
 
 			sync_before_read((void*) prev, sizeof(struct general_td));
 #ifdef _DU_OHCI_F

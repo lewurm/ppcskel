@@ -104,7 +104,7 @@ s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size)
 
 s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size, u8 dev_desc_size)
 {
-	printf("WTF SIZE: %X\n", size>= dev_desc_size ? dev_desc_size : size);
+	printf("WTF SIZE: 0x%X\n", size>= dev_desc_size ? dev_desc_size : size);
 	usb_get_descriptor(dev, DEVICE, 0, buf, size >= dev_desc_size ? dev_desc_size : size);
 	return 0;
 }
