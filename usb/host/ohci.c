@@ -187,13 +187,17 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 	dest->flags &= LE(~OHCI_TD_DIRECTION_PID_MASK);
 	switch(src->pid) {
 		case USB_PID_SETUP:
+#ifdef _DU_OHCI_Q
 			printf("pid_setup\n");
+#endif
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_SETUP);
 			dest->flags |= LE(OHCI_TD_TOGGLE_0);
 			dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
 			break;
 		case USB_PID_OUT:
+#ifdef _DU_OHCI_Q
 			printf("pid_out\n");
+#endif
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_OUT);
 			dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
 
@@ -204,11 +208,15 @@ static void general_td_fill(struct general_td *dest, const usb_transfer_descript
 			dest->flags |= LE(OHCI_TD_TOGGLE_1);
 			break;
 		case USB_PID_IN:
+#ifdef _DU_OHCI_Q
 			printf("pid_in\n");
+#endif
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_IN);
 			if(src->maxp > src->actlen) {
 				dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
+#ifdef _DU_OHCI_Q
 				printf("round buffer!\n");
+#endif
 			}
 			/*
 			 * let the endpoint do the togglestuff!

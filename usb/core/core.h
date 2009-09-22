@@ -114,7 +114,7 @@ struct usb_irp_t {
 	u8 epsize;
 	u8 type;				/* control, interrupt, bulk or isochron */
 
-	char * buffer;
+	u8 *buffer;
 	u16 len;
 
 	//list * td_list;
@@ -135,7 +135,7 @@ struct usb_transfer_descriptor_t {
 	u8 iso;
 	u8 togl;	
 	
-	char * buffer;
+	u8 *buffer;
 	u16 actlen;
 	
 	u8 state;

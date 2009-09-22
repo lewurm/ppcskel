@@ -65,8 +65,7 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 /* For initializing controller (mask in an HCFS mode too) */
 #define OHCI_CONTROL_INIT      (3 << 0)
 #define        OHCI_INTR_INIT \
-               (OHCI_INTR_MIE | OHCI_INTR_RHSC | OHCI_INTR_UE \
-               | OHCI_INTR_RD | OHCI_INTR_WDH)
+               (OHCI_INTR_MIE | OHCI_INTR_RHSC | OHCI_INTR_UE)
 
 /* OHCI ROOT HUB REGISTER MASKS */
 

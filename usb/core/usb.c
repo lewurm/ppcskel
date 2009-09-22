@@ -34,17 +34,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-//wtf??!
-//#ifndef _USB_H_
-//#define _USB_H_
-
-//#include <stdlib.h>
-
 #include "usb.h"
 #include "core.h"
 #include "../host/host.h"
 #include "../usbspec/usb11spec.h"
 #include "../../malloc.h"
+#include "../../string.h"
 
 
 /******************* Device Operations **********************/
@@ -52,7 +47,7 @@
 /**
  * Open a device with verndor- and product-id for a communication.
  */
-usb_device * usb_open(u32 vendor_id, u32 product_id)
+usb_device *usb_open(u32 vendor_id, u32 product_id)
 {
 	usb_device* dev;
 	element * iterator = core.devices->head;
@@ -72,7 +67,7 @@ usb_device * usb_open(u32 vendor_id, u32 product_id)
 /**
  * Open a device with an class code for a communication.
  */
-usb_device * usb_open_class(u8 class)
+usb_device *usb_open_class(u8 class)
 {
 	usb_device* dev;
 	element * iterator = core.devices->head;
@@ -87,40 +82,53 @@ usb_device * usb_open_class(u8 class)
 	return NULL;
 }
 
-/**
- * Close device after a communication.
+/* Close device after a communication.
  */
-u8 usb_close(usb_device *dev)
+s8 usb_close(usb_device *dev)
 {
 
 	return 0;
 }
 
-u8 usb_get_device_descriptor(usb_device *dev, char *buf,u8 size)
+/* ask first 8 bytes of device descriptor with this special 
+ * GET Descriptor Request, when device address = 0
+ */
+s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size)
+{
+	if(size < 8) {
+		return -1;
+	}
+	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
+	return 0;
+}
+
+s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size, u8 dev_desc_size)
+{
+	printf("WTF SIZE: %X\n", size>= dev_desc_size ? dev_desc_size : size);
+	usb_get_descriptor(dev, DEVICE, 0, buf, size >= dev_desc_size ? dev_desc_size : size);
+	return 0;
+}
+
+s8 usb_set_address(usb_device *dev, u8 address)
+{
+	u8 buf[64];
+	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 0);
+	return 0;
+}
+
+s8 usb_set_configuration(usb_device *dev, u8 configuration)
 {
 
 	return 0;
 }
 
-u8 usb_set_address(usb_device *dev, u8 address)
+s8 usb_set_altinterface(usb_device *dev, u8 alternate)
 {
 
 	return 0;
 }
 
-u8 usb_set_configuration(usb_device *dev, u8 configuration)
-{
-
-	return 0;
-}
-
-u8 usb_set_altinterface(usb_device *dev, u8 alternate)
-{
-
-	return 0;
-}
-
-u8 usb_reset(usb_device *dev)
+s8 usb_reset(usb_device *dev)
 {
 
 
@@ -133,7 +141,8 @@ u8 usb_reset(usb_device *dev)
 /**
  * Create a control transfer.
  */
-u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length,char *buf, u16 size, u16 timeout)
+s8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request,
+		u16 value, u16 index, u16 length, u8 *buf, u16 timeout)
 {
 	usb_irp *irp = (usb_irp*)malloc(sizeof(usb_irp));
 	irp->dev = dev;
@@ -142,14 +151,14 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 	irp->epsize = dev->bMaxPacketSize0;
 	irp->type = USB_CTRL;
 
-	buf[0]=(char)requesttype;
-	buf[1]=(char)request;
-	buf[2]=(char)(value);
-	buf[3]=(char)(value >> 8);
-	buf[4]=(char)(index);
-	buf[5]=(char)(index >> 8);
-	buf[6]=(char)(length);
-	buf[7]=(char)(length >> 8);
+	buf[0]=(u8)requesttype;
+	buf[1]=(u8)request;
+	buf[2]=(u8)(value);
+	buf[3]=(u8)(value >> 8);
+	buf[4]=(u8)(index);
+	buf[5]=(u8)(index >> 8);
+	buf[6]=(u8)(length);
+	buf[7]=(u8)(length >> 8);
 
 	irp->buffer = buf;
 	irp->len = length;
@@ -162,22 +171,23 @@ u8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 i
 }
 
 
-u8 usb_get_string(usb_device *dev, u8 index, u8 langid, char *buf, u8 buflen)
+s8 usb_get_string(usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen)
 {
 
 	return 0;
 }
 
 
-u8 usb_get_string_simple(usb_device *dev, u8 index, char *buf, u8 buflen)
+s8 usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size)
 {
-
+	usb_get_descriptor(dev, STRING, index, buf, (u8) 8);
+	usb_get_descriptor(dev, STRING, index, buf, size >= buf[0] ? (u8) buf[0] : size);
 	return 0;
 }
 
-u8 usb_get_descriptor(usb_device *dev, unsigned char type, unsigned char index, void *buf, u8 size)
+s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
 {
-
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (type << 8) | index, 0, size, buf, 0);
 	return 0;
 }
 
@@ -187,7 +197,7 @@ u8 usb_get_descriptor(usb_device *dev, unsigned char type, unsigned char index, 
 /**
  * Write to an a bulk endpoint.
  */
-u8 usb_bulk_write(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
+s8 usb_bulk_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 	usb_irp * irp = (usb_irp*)malloc(sizeof(usb_irp));
 	irp->dev = dev;
@@ -210,7 +220,7 @@ u8 usb_bulk_write(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
 /**
  * Read from an bulk endpoint.
  */
-u8 usb_bulk_read(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
+s8 usb_bulk_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 	usb_irp * irp = (usb_irp*)malloc(sizeof(usb_irp));
 	//irp->devaddress = dev->address;
@@ -235,7 +245,7 @@ u8 usb_bulk_read(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
 /**
  * Write to an interrupt endpoint.
  */
-u8 usb_interrupt_write(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
+s8 usb_interrupt_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 	return 0;
@@ -244,7 +254,7 @@ u8 usb_interrupt_write(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
 /**
  * Read from an interrupt endpoint.
  */
-u8 usb_interrupt_read(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
+s8 usb_interrupt_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 	return 0;
@@ -256,7 +266,7 @@ u8 usb_interrupt_read(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
 /**
  * Write to an isochron endpoint.
  */
-u8 usb_isochron_write(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
+s8 usb_isochron_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 	return 0;
@@ -265,7 +275,7 @@ u8 usb_isochron_write(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
 /**
  * Read from an isochron endpoint.
  */
-u8 usb_isochron_read(usb_device *dev, u8 ep, char *buf, u8 size, u8 timeout)
+s8 usb_isochron_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 

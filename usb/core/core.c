@@ -101,56 +101,36 @@ usb_device *usb_add_device()
 	dev->epTogl[1] = 0;
 	dev->epTogl[2] = 0;
 
-	char buf[64];
+#define LEN 128
+	u8 buf[LEN];
 	memset(buf, 0, sizeof(buf));
 
-	/* ask first 8 bytes of device descriptor with this special 
-	 * GET Descriptor Request, when device address = 0
-	 */
-
-	/*
-	 * see page 253 in usb_20.pdf
-	 * 
-	 * bmRequestType = 0x80 = 10000000B
-	 * bRequest = GET_DESCRIPTOR
-	 * wValue = DEVICE (Descriptor Type)
-	 * wIndex = 0
-	 * wLength = 64 // in fact just 8 bytes
-	 */
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE << 8, 0, 64, buf, 8, 0);
-
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	s8 ret;
+	u8 dev_desc_size;
+	memset(buf, 0, sizeof(buf));
+	ret = usb_get_dev_desc_simple(dev, buf, sizeof(buf));
+	printf("=============\nbuf: 0x%08X\nafter usb control msg(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
 
-	u8 devdescr_size;
-	u8 address = usb_next_address();
-
-	/* setup real ep0 fifo size */
+	/* set MaxPacketSize */
 	dev->bMaxPacketSize0 = (u8) buf[7];
 	if(!(u8)buf[7]) {
 		printf("FU\n");
 		return (void*)1;
 	}
+	/* save device descriptor size */
+	dev_desc_size = buf[0];
 
-	/* save real length of device descriptor */
-	devdescr_size = (u8) buf[0];
-
-	/* define new adress */
-	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 8, 0);
+	u8 address = usb_next_address();
+	ret = usb_set_address(dev, address);
 	dev->address = address;
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
-	hexdump(buf, sizeof(buf));
-	printf("address: %d\n", address);
+	printf("set address to %d\n", dev->address);
 
-
-	/* get complete device descriptor */
-	memset(buf, 0, 64);
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8, 0);
-
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	memset(buf, 0, sizeof(buf));
+	ret = usb_get_dev_desc(dev, buf, sizeof(buf), dev_desc_size);
+	printf("=============\nbuf: 0x%08X\nafter usb control msg(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
 
-	/* save only really neccessary values for this small usbstack */
 	dev->bDeviceClass = (u8) buf[4];
 	dev->bDeviceSubClass = (u8) buf[5];
 	dev->bDeviceProtocoll = (u8) buf[6];
@@ -163,12 +143,66 @@ usb_device *usb_add_device()
 			"bDeviceProtocoll 0x%02X\n"
 			"idVendor 0x%04X\n"
 			"idProduct 0x%04X\n"
-			"bcdDevice 0x%04X\n", dev->bDeviceClass, 
+			"bcdDevice 0x%04X\n", dev->bDeviceClass,
 			dev->bDeviceSubClass, dev->bDeviceProtocoll,
 			dev->idVendor, dev->idProduct, dev->bcdDevice);
 
-#if 1
-	memset(buf, 0, 64);
+	/*
+	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
+	memset(buf, 0, 8);
+	usb_get_descriptor(dev, DEVICE, 0, buf, size >= buf[0] ? buf[0] : size);
+	*/
+#if 0
+	memset(buf, 0, sizeof(buf));
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (DEVICE << 8) | 0, 0, 8, buf, 0);
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
+
+	memset(buf, 0, sizeof(buf));
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (DEVICE << 8) | 0, 0, buf[0], buf, 0);
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
+
+	memset(buf, 0, sizeof(buf));
+	usb_get_string_simple(dev, 1, buf);
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
+#endif
+
+#if 0
+	u8 devdescr_size;
+
+	/* setup real ep0 fifo size */
+	dev->bMaxPacketSize0 = (u8) buf[7];
+	if(!(u8)buf[7]) {
+		printf("FU\n");
+		return (void*)1;
+	}
+
+	/* save real length of device descriptor */
+	devdescr_size = (u8) buf[0];
+
+	/* define new adress */
+	memset(buf, 0, sizeof(buf));
+	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 8, 0);
+	dev->address = address;
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
+	printf("address: %d\n", address);
+
+
+	/* get complete device descriptor */
+	memset(buf, 0, sizeof(buf));
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8, 0);
+
+	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
+	hexdump(buf, sizeof(buf));
+
+	/* save only really neccessary values for this small usbstack */
+#endif
+
+#if 0
+	memset(buf, 0, sizeof(buf));
 	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8)|2, 0, 0x1a, buf, 8, 0);
 	hexdump(buf, sizeof(buf));
 	printf("String Descriptor [1]: ");
@@ -282,8 +316,8 @@ u16 usb_submit_irp(usb_irp *irp)
 	usb_transfer_descriptor *td;
 	u8 runloop = 1;
 	u16 restlength = irp->len;
-	char *td_buf_ptr = irp->buffer;
-	char mybuf[64];
+	u8 *td_buf_ptr = irp->buffer;
+	u8 mybuf[64];
 
 	u8 togl = irp->dev->epTogl[(irp->endpoint & 0x7F)];
 

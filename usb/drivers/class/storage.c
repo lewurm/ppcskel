@@ -74,7 +74,7 @@ void usb_storage_probe()
 	#endif
  
 	/* read interface descriptor for class code */
-	char buf[32];
+	u8 buf[32];
 	
 	usb_device* dev;
 	element * iterator = core.devices->head;
@@ -83,7 +83,7 @@ void usb_storage_probe()
 		dev = (usb_device*)iterator->data;
 
 		/* get interface descriptor */
-		usb_control_msg(dev, 0x80, GET_DESCRIPTOR,2, 0,  32,buf, 8, 0);
+		usb_control_msg(dev, 0x80, GET_DESCRIPTOR,2, 0, 32, buf, 0);
 
 		if(buf[14]==MASS_STORAGE_CLASSCODE){
 			massstorage[massstorage_in_use] = dev;
@@ -125,12 +125,12 @@ void usb_storage_check()
 u8 usb_storage_open(u8 device)
 {
 	/* set configuration */
-	char tmp[8];
-	usb_control_msg(massstorage[device], 0x00,SET_CONFIGURATION,0x0100, 0, 0,tmp, 8, 0);
+	u8 tmp[8];
+	usb_control_msg(massstorage[device], 0x00,SET_CONFIGURATION,0x0100, 0, 0, tmp, 0);
 
 
 	/* class request */
-	usb_control_msg(massstorage[device], 0xA1,0xFE,0, 0, 1,tmp, 8, 0);
+	usb_control_msg(massstorage[device], 0xA1,0xFE,0, 0, 1,tmp, 0);
 
 	/* wait until the stick is complete ready */
 	wait_ms(10);
@@ -157,9 +157,9 @@ u8 usb_storage_inquiry(u8 device)
 
 	cbw->CBWCB[0]=0x12; // 0x12 = INQUIRY
 
-	usb_bulk_write(massstorage[device], 2, (char*)cbw, 31, 0); 
-	usb_bulk_read(massstorage[device], 1, (char*)cbw, 36, 0); 
-	usb_bulk_read(massstorage[device], 1, (char*)cbw, 13, 0); 
+	usb_bulk_write(massstorage[device], 2, (u8*)cbw, 31, 0); 
+	usb_bulk_read(massstorage[device], 1, (u8*)cbw, 36, 0); 
+	usb_bulk_read(massstorage[device], 1, (u8*)cbw, 13, 0); 
 
 	free(cbw);
 
@@ -171,11 +171,11 @@ u8 usb_storage_read_capacity(u8 device)
 {
 	/* send cwb "usbc" */
 
-	char tmp[8];
+	u8 tmp[8];
 	u8 i;
 	usb_storage_cbw  * cbw = (usb_storage_cbw*)malloc(sizeof(usb_storage_cbw));
 
-	usb_control_msg(massstorage[device], 0x02,1,0, 0x8100, 0,tmp, 8, 0);	// 
+	usb_control_msg(massstorage[device], 0x02,1,0, 0x8100, 0,tmp, 0);
 
 	cbw->dCBWSignature= 0x43425355;
 	cbw->dCBWTag=0x826A6008;
@@ -189,9 +189,9 @@ u8 usb_storage_read_capacity(u8 device)
 
 	cbw->CBWCB[0]=0x25; // 0x12 = INQUIRY
 
-	usb_bulk_write(massstorage[device], 2, (char*)cbw, 31, 0); 
-	usb_bulk_read(massstorage[device], 1, (char*)cbw, 8, 0); 
-	usb_bulk_read(massstorage[device], 1, (char*)cbw, 13, 0); 
+	usb_bulk_write(massstorage[device], 2, (u8*)cbw, 31, 0); 
+	usb_bulk_read(massstorage[device], 1, (u8*)cbw, 8, 0); 
+	usb_bulk_read(massstorage[device], 1, (u8*)cbw, 13, 0); 
 
 	free(cbw);
 
@@ -202,7 +202,7 @@ u8 usb_storage_read_capacity(u8 device)
 u8 usb_storage_read_sector(u8 device, u32 sector, char * buf)
 {
 	/* send cwb "usbc" */
-	char tmpbuf[] = {0x55,0x53,0x42,0x43,0x08,
+	u8 tmpbuf[] = {0x55,0x53,0x42,0x43,0x08,
 		0xE0,0x63,0x82,0x00,0x02,
 		0x00,0x00,0x80,0x00,0x0A,
 		0x28,0x00,0x00,0x00,0x00,
