@@ -82,6 +82,9 @@ struct usb_conf {
 	u8 iConfiguration;
 	u8 bmAttributes;
 	u8 bMaxPower;
+
+	struct usb_conf *next;
+	struct usb_intf *intf;
 };
 
 struct usb_intf {
@@ -96,6 +99,7 @@ struct usb_intf {
 	u8 iInterface;
 
 	struct usb_intf *next;
+	struct usb_endp *endp;
 };
 
 struct usb_endp {
@@ -193,7 +197,7 @@ u8 usb_remove_device(struct usb_device *dev);
 u8 usb_register_driver(struct usb_driver *driver);
 void usb_probe_driver();
 
-
+void lsusb(struct usb_device *dev);
 
 struct usb_irp *usb_get_irp();
 u8 usb_remove_irp(struct usb_irp *irp);

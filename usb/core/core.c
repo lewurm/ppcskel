@@ -113,153 +113,15 @@ struct usb_device *usb_add_device()
 	u8 address = usb_next_address();
 	ret = usb_set_address(dev, address);
 	dev->address = address;
-#ifdef _DU_CORE_ADD
 	printf("set address to %d\n", dev->address);
-#endif
 
 	ret = usb_get_desc_dev(dev);
-
-	char *man, *prod, *serial;
-	if(dev->iManufacturer) {
-		man = usb_get_string_simple(dev, dev->iManufacturer);
-	} else {
-		man = (char*) malloc(11);
-		memset(man, '\0', sizeof(man));
-		strlcpy(man, "no String", 10);
-	}
-	if(dev->iProduct) {
-		prod = usb_get_string_simple(dev, dev->iProduct);
-	} else {
-		prod = (char*) malloc(11);
-		memset(prod, '\0', sizeof(prod));
-		strlcpy(prod, "no String", 10);
-	}
-	if(dev->iSerialNumber) {
-		serial = usb_get_string_simple(dev, dev->iSerialNumber);
-	} else {
-		serial = (char*) malloc(11);
-		memset(serial, '\0', sizeof(serial));
-		strlcpy(serial, "no String", 10);
-	}
-
-	printf(	"bLength 0x%02X\n"
-			"bDescriptorType 0x%02X\n"
-			"bcdUSB 0x%02X\n"
-			"bDeviceClass 0x%02X\n"
-			"bDeviceSubClass 0x%02X\n"
-			"bDeviceProtocoll 0x%02X\n"
-			"idVendor 0x%04X\n"
-			"idProduct 0x%04X\n"
-			"bcdDevice 0x%04X\n"
-			"iManufacturer(0x%02X): \"%s\"\n"
-			"iProduct(0x%02X): \"%s\"\n"
-			"iSerialNumber(0x%02X): \"%s\"\n"
-			"bNumConfigurations 0x%02X\n", dev->bLength, dev->bDeviceClass,
-			dev->bcdUSB, dev->bDescriptorType, dev->bDeviceSubClass, 
-			dev->bDeviceProtocoll, dev->idVendor, dev->idProduct, dev->bcdDevice, 
-			dev->iManufacturer, man,
-			dev->iProduct, prod,
-			dev->iSerialNumber, serial,
-			dev->bNumConfigurations);
-
-	/* in the most cases usb devices have just one configuration descriptor */
-	ret = usb_get_desc_config_ext(dev, 0);
 
 	/* select configuration */
 	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
 	printf("=============\nusb_set_configuration(ret: %d) %d\n", ret, dev->conf->bConfigurationValue);
 
-	/*
-	udelay(600000);
-
-	printf("=============\ninterfaces: %d\n", dev->conf->bNumInterfaces);
-	u8 i;
-	for(i = 1; i <= dev->conf->bNumInterfaces; i++) {
-		memset(buf, 0, sizeof(buf));
-		ret = usb_get_desc_interface(dev, 1, buf, sizeof(buf));
-		printf("=============\nafter usb_get_desc_interface_%d(ret: %d):\n", i, ret);
-		hexdump(buf, sizeof(buf));
-	}
-	*/
-
-
-
-	/*
-	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
-	memset(buf, 0, 8);
-	usb_get_descriptor(dev, DEVICE, 0, buf, size >= buf[0] ? buf[0] : size);
-	*/
-#if 0
-	memset(buf, 0, sizeof(buf));
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (DEVICE << 8) | 0, 0, 8, buf, 0);
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
-	hexdump(buf, sizeof(buf));
-
-	memset(buf, 0, sizeof(buf));
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (DEVICE << 8) | 0, 0, buf[0], buf, 0);
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
-	hexdump(buf, sizeof(buf));
-
-	memset(buf, 0, sizeof(buf));
-	usb_get_string_simple(dev, 1, buf);
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
-	hexdump(buf, sizeof(buf));
-#endif
-
-#if 0
-	u8 devdescr_size;
-
-	/* setup real ep0 fifo size */
-	dev->bMaxPacketSize0 = (u8) buf[7];
-	if(!(u8)buf[7]) {
-		printf("FU\n");
-		return (void*)1;
-	}
-
-	/* save real length of device descriptor */
-	devdescr_size = (u8) buf[0];
-
-	/* define new adress */
-	memset(buf, 0, sizeof(buf));
-	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 8, 0);
-	dev->address = address;
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
-	hexdump(buf, sizeof(buf));
-	printf("address: %d\n", address);
-
-
-	/* get complete device descriptor */
-	memset(buf, 0, sizeof(buf));
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, DEVICE<<8, 0, devdescr_size, buf, 8, 0);
-
-	printf("=============\nbuf: 0x%08X\nafter usb control msg:\n", buf);
-	hexdump(buf, sizeof(buf));
-
-	/* save only really neccessary values for this small usbstack */
-#endif
-
-#if 0
-	memset(buf, 0, sizeof(buf));
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8)|2, 0, 0x1a, buf, 8, 0);
-	hexdump(buf, sizeof(buf));
-	printf("String Descriptor [1]: ");
-	u8 i;
-	for (i=2; i<buf[0]; i+=2)
-		printf("%c", buf[i]);
-	printf("\n");
-#endif
-
-	/*
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (STRING<<8) | 2, 0, 0x20, buf, 8, 0);
-	printf("String Descriptor [2]: ");
-	for (i=2; i<buf[0]; i+=2)
-		printf("%c", buf[i]);
-	printf("\n");
-	*/
-
-	// string descriptoren werden nicht im arbeitsspeicher gehalten -> on demand mit 
-	// entprechenden funktionen
-	// hier muss man noch mehr abholen, konfigurationene, interfaces und endpunkte
+	lsusb(dev);
 
 #if 0
 	/* add device to device list */
@@ -271,6 +133,69 @@ struct usb_device *usb_add_device()
 #endif
 
 	return dev;
+}
+
+void lsusb(struct usb_device *dev)
+{
+	printf("=== Device Descriptor === \n");
+	printf("bLength 0x%02X\n", dev->bLength);
+	printf("bDescriptorType 0x%02X\n", dev->bDeviceClass);
+	printf("bcdUSB 0x%02X\n", dev->bcdUSB);
+	printf("bDeviceClass 0x%02X\n", dev->bDeviceClass);
+	printf("bDeviceSubClass 0x%02X\n", dev->bDeviceSubClass);
+	printf("bDeviceProtocoll 0x%02X\n", dev->bDeviceProtocoll);
+	printf("idVendor 0x%04X\n", dev->idVendor);
+	printf("idProduct 0x%04X\n", dev->idProduct);
+	printf("bcdDevice 0x%04X\n", dev->bcdDevice);
+	printf("iManufacturer(0x%02X): \"%s\"\n", dev->iManufacturer, dev->iManufacturer ? usb_get_string_simple(dev, dev->iManufacturer) : "no String");
+	printf("iProduct(0x%02X): \"%s\"\n", dev->iProduct, dev->iProduct ? usb_get_string_simple(dev, dev->iProduct) : "no String");
+	printf("iSerialNumber(0x%02X): \"%s\"\n", dev->iSerialNumber, dev->iSerialNumber ? usb_get_string_simple(dev, dev->iSerialNumber) : "no String");
+	printf("bNumConfigurations 0x%02X\n", dev->bNumConfigurations);
+	
+	u8 c, i, e;
+	struct usb_conf *conf = dev->conf;
+	for(c=0; c <= dev->bNumConfigurations; c++) {
+		printf("  === Configuration Descriptor %d ===\n", c+1);
+		printf("  bLength 0x%02X\n", conf->bLength);
+		printf("  bDescriptorType 0x%02X\n", conf->bDescriptorType);
+		printf("  wTotalLength 0x%04X\n", conf->wTotalLength);
+		printf("  bNumInterfaces 0x%02X\n", conf->bNumInterfaces);
+		printf("  bConfigurationValue 0x%02X\n", conf->bConfigurationValue);
+		printf("  iConfiguration (0x%02X): \"%s\"\n", conf->iConfiguration, conf->iConfiguration ? usb_get_string_simple(dev, conf->iConfiguration) : "no String");
+		printf("  bmAttributes 0x%02X\n", conf->bmAttributes);
+		printf("  bMaxPower 0x%02X\n", conf->bMaxPower);
+
+		struct usb_intf *ifs = conf->intf;
+		for(i=1; i <= conf->bNumInterfaces; i++) {
+			printf("    === Interface Descriptor %d ===\n", i);
+			printf("    bLength 0x%02X\n", ifs->bLength);
+			printf("    bDescriptorType 0x%02X\n", ifs->bDescriptorType);
+			printf("    bInterfaceNumber 0x%02X\n", ifs->bInterfaceNumber);
+			printf("    bAlternateSetting 0x%02X\n", ifs->bAlternateSetting);
+			printf("    bNumEndpoints 0x%02X\n", ifs->bNumEndpoints);
+			printf("    bInterfaceClass 0x%02X\n", ifs->bInterfaceClass);
+			printf("    bInterfaceSubClass 0x%02X\n", ifs->bInterfaceSubClass);
+			printf("    bInterfaceProtocol 0x%02X\n", ifs->bInterfaceProtocol);
+			printf("    iInterface (0x%02X): \"%s\"\n", ifs->iInterface, ifs->iInterface ? usb_get_string_simple(dev, ifs->iInterface) : "no String");
+
+			struct usb_endp *ed = ifs->endp;
+			for(e=1; e <= ifs->bNumEndpoints; e++) {
+				printf("      === Endpoint Descriptor %d ===\n", e);
+				printf("      bLength 0x%02X\n", ed->bLength);
+				printf("      bDescriptorType 0x%02X\n", ed->bDescriptorType);
+				printf("      bEndpointAddress 0x%02X\n", ed->bEndpointAddress);
+				printf("      bmAttributes 0x%02X\n", ed->bmAttributes);
+				printf("      wMaxPacketSize 0x%02X\n", ed->wMaxPacketSize);
+				printf("      bInterval 0x%02X\n", ed->bInterval);
+
+				ed = ed->next;
+			} //endpoint
+			
+			ifs = ifs->next;
+		} //interface
+
+		conf = conf->next;
+	} //configuration
 }
 
 /**

@@ -41,13 +41,11 @@
 #include "../../malloc.h"
 #include "../../string.h"
 
-#define cleargbuf() memset(gbuf, 0, 0xff)
+#define cleargbuf() memset(gbuf, 0, 0xffff)
 /* internal global buffer */
-static u8 gbuf[0xff];
-
+static u8 gbuf[0xffff];
 
 /******************* Device Operations **********************/
-
 /**
  * Open a device with verndor- and product-id for a communication.
  */
@@ -160,9 +158,7 @@ char *usb_get_string_simple(struct usb_device *dev, u8 index)
 	u16 i;
 	for(i=0; i<(gbuf[0]/2)-1; i++) {
 		str[i] = gbuf[2+(i*2)];
-		printf("%c", str[i]);
 	}
-	printf("\n");
 
 	return str;
 }
@@ -205,23 +201,33 @@ s8 usb_get_desc_dev(struct usb_device *dev)
 	dev->iSerialNumber = gbuf[16];
 	dev->bNumConfigurations = gbuf[17];
 
+	u8 i;
+	struct usb_conf *conf = dev->conf = (struct usb_conf*) malloc(sizeof(struct usb_conf));
+	for(i=0; i <= dev->bNumConfigurations; i++) {
+		if(i!=0) {
+			conf = (struct usb_conf*) malloc(sizeof(struct usb_conf));
+		}
+		usb_get_desc_config_ext(dev, i, conf);
+	}
+
 	return 0;
 }
 
-s8 usb_get_desc_configuration(struct usb_device *dev, u8 index)
+s8 usb_get_desc_configuration(struct usb_device *dev, u8 index, struct usb_conf *conf)
 {
 	cleargbuf();
 	usb_get_descriptor(dev, CONFIGURATION, index, gbuf, 8);
 	usb_get_descriptor(dev, CONFIGURATION, index, gbuf, gbuf[0]);
 
-	dev->conf->bLength = gbuf[0];
-	dev->conf->bDescriptorType = gbuf[1];
-	dev->conf->wTotalLength = (u16) (gbuf[3] << 8 | gbuf[2]);
-	dev->conf->bNumInterfaces = gbuf[4];
-	dev->conf->bConfigurationValue = gbuf[5];
-	dev->conf->iConfiguration = gbuf[6];
-	dev->conf->bmAttributes = gbuf[7];
-	dev->conf->bMaxPower = gbuf[8];
+	conf->bLength = gbuf[0];
+	conf->bDescriptorType = gbuf[1];
+	conf->wTotalLength = (u16) (gbuf[3] << 8 | gbuf[2]);
+	conf->bNumInterfaces = gbuf[4];
+	conf->bConfigurationValue = gbuf[5];
+	conf->iConfiguration = gbuf[6];
+	conf->bmAttributes = gbuf[7];
+	conf->bMaxPower = gbuf[8];
+	conf->intf = NULL;
 
 	return 0;
 }
@@ -230,12 +236,56 @@ s8 usb_get_desc_configuration(struct usb_device *dev, u8 index)
  * INTERFACE(s) and ENDPOINT(s)
  * usb_get_desc_configuration() must be called for this device before
  */
-s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index) {
+s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index, struct usb_conf *conf)
+{
 	cleargbuf();
 
-	usb_get_desc_configuration(dev, index);
+	usb_get_desc_configuration(dev, index, conf);
 	usb_get_descriptor(dev, CONFIGURATION, index, gbuf, dev->conf->wTotalLength);
 
+	u8 i,j,off=9;
+	struct usb_intf *ifs = dev->conf->intf = (struct usb_intf*) malloc(sizeof(struct usb_intf));
+	for(i=1; i <= dev->conf->bNumInterfaces; i++) {
+		if(i!=1) {
+			ifs->next = (struct usb_intf*) malloc(sizeof(struct usb_intf));
+			ifs = ifs->next;
+		}
+		ifs->bLength = gbuf[off+0];
+		ifs->bDescriptorType = gbuf[off+1];
+		ifs->bInterfaceNumber = gbuf[off+2];
+		ifs->bAlternateSetting = gbuf[off+3];
+		ifs->bNumEndpoints = gbuf[off+4];
+		ifs->bInterfaceClass = gbuf[off+5];
+		ifs->bInterfaceSubClass = gbuf[off+6];
+		ifs->bInterfaceProtocol = gbuf[off+7];
+		ifs->iInterface = gbuf[off+8];
+
+		off += 9;
+
+		struct usb_endp *ep = ifs->endp = (struct usb_endp*) malloc(sizeof(struct usb_endp));
+		for(j=1; j <= ifs->bNumEndpoints; j++) {
+			/* skip HID Device Descriptor (see lsusb) */
+			if(gbuf[off+1] == 33) {
+				j--;
+				off += 9;
+				continue;
+			}
+
+			if(j!=1) {
+				ep->next = (struct usb_endp*) malloc(sizeof(struct usb_endp));
+				ep = ep->next;
+			}
+
+			ep->bLength = gbuf[off+0];
+			ep->bDescriptorType = gbuf[off+1];
+			ep->bEndpointAddress = gbuf[off+2];
+			ep->bmAttributes = gbuf[off+3];
+			ep->wMaxPacketSize = (u16) ((gbuf[off+5] << 8) | (gbuf[off+4]));
+			ep->bInterval = gbuf[off+6];
+
+			off += 7;
+		}
+	}
 
 	printf("=============\nafter usb_get_desc_config_ext:\n");
 	hexdump((void*) gbuf, dev->conf->wTotalLength);

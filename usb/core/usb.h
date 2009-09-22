@@ -63,8 +63,8 @@ s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request, u16 value
 s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size);
 s8 usb_get_desc_dev_simple(struct usb_device *dev);
 s8 usb_get_desc_dev(struct usb_device *dev);
-s8 usb_get_desc_configuration(struct usb_device *dev, u8 index);
-s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index);
+s8 usb_get_desc_configuration(struct usb_device *dev, u8 index, struct usb_conf *conf);
+s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index, struct usb_conf *conf);
 
 char *usb_get_string_simple(struct usb_device *dev, u8 index);
 s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid);
