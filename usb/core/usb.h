@@ -61,13 +61,13 @@ s8 usb_reset(struct usb_device *dev);
 /******************* Control Transfer **********************/
 s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length, u8 *buf, u16 timeout);
 s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size);
-s8 usb_get_desc_dev_simple(struct usb_device *dev, u8 *buf, u8 size);
-s8 usb_get_desc_dev(struct usb_device *dev, u8 *buf, u8 size);
-s8 usb_get_desc_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size);
-s8 usb_get_desc_interface(struct usb_device *dev, u8 index, u8 *buf, u8 size);
+s8 usb_get_desc_dev_simple(struct usb_device *dev);
+s8 usb_get_desc_dev(struct usb_device *dev);
+s8 usb_get_desc_configuration(struct usb_device *dev, u8 index);
+s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index);
 
-char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size);
-s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen);
+char *usb_get_string_simple(struct usb_device *dev, u8 index);
+s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid);
 
 s8 usb_set_address(struct usb_device *dev, u8 address);
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration);

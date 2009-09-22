@@ -41,6 +41,10 @@
 #include "../../malloc.h"
 #include "../../string.h"
 
+#define cleargbuf() memset(gbuf, 0, 0xff)
+/* internal global buffer */
+static u8 gbuf[0xff];
+
 
 /******************* Device Operations **********************/
 
@@ -132,29 +136,30 @@ s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request,
 	return 0;
 }
 
+s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
+{
+	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (type << 8) | index, 0, size, buf, 0);
+	return 0;
+}
 
-s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen)
+s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid)
 {
 
 	return 0;
 }
 
-
-char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size)
+char *usb_get_string_simple(struct usb_device *dev, u8 index)
 {
-	if(size < 8) {
-		return (char*) -1;
-	}
-	usb_get_descriptor(dev, STRING, index, buf, (u8) 8);
-	size = size >= (buf[0]) ? (buf[0]) : size;
-	usb_get_descriptor(dev, STRING, index, buf, size);
+	cleargbuf();
+	usb_get_descriptor(dev, STRING, index, gbuf, (u8) 8);
+	usb_get_descriptor(dev, STRING, index, gbuf, gbuf[0]);
 
-	char *str = (char*)malloc((size/2));
-	memset(str, '\0', (size/2));
+	char *str = (char*)malloc((gbuf[0]/2));
+	memset(str, '\0', (gbuf[0]/2));
 
 	u16 i;
-	for(i=0; i<(size/2)-1; i++) {
-		str[i] = buf[2+(i*2)];
+	for(i=0; i<(gbuf[0]/2)-1; i++) {
+		str[i] = gbuf[2+(i*2)];
 		printf("%c", str[i]);
 	}
 	printf("\n");
@@ -162,94 +167,92 @@ char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size)
 	return str;
 }
 
-s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
-{
-	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (type << 8) | index, 0, size, buf, 0);
-	return 0;
-}
-
 /* ask first 8 bytes of device descriptor with this special 
  * GET Descriptor Request, when device address = 0
  */
-s8 usb_get_desc_dev_simple(struct usb_device *dev, u8 *buf, u8 size)
+s8 usb_get_desc_dev_simple(struct usb_device *dev)
 {
-	if(size < 8) {
-		return -1;
-	}
-	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
+	cleargbuf();
+	usb_get_descriptor(dev, DEVICE, 0, gbuf, 8);
 
-	if(!buf[7]) {
-		printf("FU: %d\n", buf[7]);
+	if(!gbuf[7]) {
+		printf("FU: %d\n", gbuf[7]);
 		return -2;
 	}
-	dev->bMaxPacketSize0 = buf[7];
+	dev->bMaxPacketSize0 = gbuf[7];
 	return 0;
 }
 
-s8 usb_get_desc_dev(struct usb_device *dev, u8 *buf, u8 size)
+s8 usb_get_desc_dev(struct usb_device *dev)
 {
-	if (size < 0x12 || usb_get_desc_dev_simple(dev, buf, size) < 0) {
+	cleargbuf();
+	if (usb_get_desc_dev_simple(dev) < 0) {
 		return -1;
 	}
-	usb_get_descriptor(dev, DEVICE, 0, buf, size >= buf[0] ? buf[0] : size);
+	usb_get_descriptor(dev, DEVICE, 0, gbuf, gbuf[0]);
 
-	dev->bLength = buf[0];
-	dev->bDescriptorType = buf[1];
-	dev->bcdUSB = (u16) (buf[3] << 8 | buf[2]);
-	dev->bDeviceClass = buf[4];
-	dev->bDeviceSubClass = buf[5];
-	dev->bDeviceProtocoll = buf[6];
-	dev->idVendor = (u16) (buf[9] << 8) | (buf[8]);
-	dev->idProduct = (u16) (buf[11] << 8) | (buf[10]);
-	dev->bcdDevice = (u16) (buf[13] << 8) | (buf[12]);
-	dev->iManufacturer = buf[14];
-	dev->iProduct = buf[15];
-	dev->iSerialNumber = buf[16];
-	dev->bNumConfigurations = buf[17];
+	dev->bLength = gbuf[0];
+	dev->bDescriptorType = gbuf[1];
+	dev->bcdUSB = (u16) (gbuf[3] << 8 | gbuf[2]);
+	dev->bDeviceClass = gbuf[4];
+	dev->bDeviceSubClass = gbuf[5];
+	dev->bDeviceProtocoll = gbuf[6];
+	dev->idVendor = (u16) (gbuf[9] << 8) | (gbuf[8]);
+	dev->idProduct = (u16) (gbuf[11] << 8) | (gbuf[10]);
+	dev->bcdDevice = (u16) (gbuf[13] << 8) | (gbuf[12]);
+	dev->iManufacturer = gbuf[14];
+	dev->iProduct = gbuf[15];
+	dev->iSerialNumber = gbuf[16];
+	dev->bNumConfigurations = gbuf[17];
 
 	return 0;
 }
 
-s8 usb_get_desc_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size)
+s8 usb_get_desc_configuration(struct usb_device *dev, u8 index)
 {
-	if(size < 9) {
-		return -1;
-	}
-	usb_get_descriptor(dev, CONFIGURATION, index, buf, 8);
-	usb_get_descriptor(dev, CONFIGURATION, index, buf, size >= buf[0] ? buf[0] : size);
+	cleargbuf();
+	usb_get_descriptor(dev, CONFIGURATION, index, gbuf, 8);
+	usb_get_descriptor(dev, CONFIGURATION, index, gbuf, gbuf[0]);
 
-	dev->conf->bLength = buf[0];
-	dev->conf->bDescriptorType = buf[1];
-	dev->conf->wTotalLength = (u16) (buf[3] << 8 | buf[2]);
-	dev->conf->bNumInterfaces = buf[4];
-	dev->conf->bConfigurationValue = buf[5];
-	dev->conf->iConfiguration = buf[6];
-	dev->conf->bmAttributes = buf[7];
-	dev->conf->bMaxPower = buf[8];
+	dev->conf->bLength = gbuf[0];
+	dev->conf->bDescriptorType = gbuf[1];
+	dev->conf->wTotalLength = (u16) (gbuf[3] << 8 | gbuf[2]);
+	dev->conf->bNumInterfaces = gbuf[4];
+	dev->conf->bConfigurationValue = gbuf[5];
+	dev->conf->iConfiguration = gbuf[6];
+	dev->conf->bmAttributes = gbuf[7];
+	dev->conf->bMaxPower = gbuf[8];
+
 	return 0;
 }
 
-s8 usb_get_desc_interface(struct usb_device *dev, u8 index, u8 *buf, u8 size)
-{
-	if(size < 9) {
-		return -1;
-	}
-	usb_get_descriptor(dev, INTERFACE, index, buf, 9);
+/* returns more information about CONFIGURATION, including
+ * INTERFACE(s) and ENDPOINT(s)
+ * usb_get_desc_configuration() must be called for this device before
+ */
+s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index) {
+	cleargbuf();
 
+	usb_get_desc_configuration(dev, index);
+	usb_get_descriptor(dev, CONFIGURATION, index, gbuf, dev->conf->wTotalLength);
+
+
+	printf("=============\nafter usb_get_desc_config_ext:\n");
+	hexdump((void*) gbuf, dev->conf->wTotalLength);
 	return 0;
 }
 
 s8 usb_set_address(struct usb_device *dev, u8 address)
 {
-	u8 buf[64];
-	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 0);
+	cleargbuf();
+	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, gbuf, 0);
 	return 0;
 }
 
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
-	u8 buf[64];
-	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration, 0, 0, buf, 0);
+	cleargbuf();
+	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration, 0, 0, gbuf, 0);
 	return 0;
 }
 

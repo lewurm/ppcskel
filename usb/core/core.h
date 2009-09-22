@@ -84,6 +84,31 @@ struct usb_conf {
 	u8 bMaxPower;
 };
 
+struct usb_intf {
+	u8 bLength;
+	u8 bDescriptorType;
+	u8 bInterfaceNumber;
+	u8 bAlternateSetting;
+	u8 bNumEndpoints;
+	u8 bInterfaceClass;
+	u8 bInterfaceSubClass;
+	u8 bInterfaceProtocol;
+	u8 iInterface;
+
+	struct usb_intf *next;
+};
+
+struct usb_endp {
+	u8 bLength;
+	u8 bDescriptorType;
+	u8 bEndpointAddress;
+	u8 bmAttributes;
+	u16 wMaxPacketSize;
+	u8 bInterval;
+
+	struct usb_endp *next;
+};
+
 struct usb_endpoint {
 	u8 type;
 	u8 size;

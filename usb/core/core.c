@@ -102,17 +102,8 @@ struct usb_device *usb_add_device()
 	dev->epTogl[1] = 0;
 	dev->epTogl[2] = 0;
 
-#define LEN 128
-	u8 buf[LEN];
-	memset(buf, 0, sizeof(buf));
-
 	s8 ret;
-	memset(buf, 0, sizeof(buf));
-	ret = usb_get_desc_dev_simple(dev, buf, sizeof(buf));
-#ifdef _DU_CORE_ADD
-	printf("=============\nafter usb_get_dev_desc_simple(ret: %d):\n", ret);
-	hexdump(buf, sizeof(buf));
-#endif
+	ret = usb_get_desc_dev_simple(dev);
 	if(ret < 0) {
 		return (void*) -1;
 	}
@@ -126,39 +117,30 @@ struct usb_device *usb_add_device()
 	printf("set address to %d\n", dev->address);
 #endif
 
-	memset(buf, 0, sizeof(buf));
-	ret = usb_get_desc_dev(dev, buf, sizeof(buf));
-#ifdef _DU_CORE_ADD
-	printf("=============\nafter usb_get_dev_desc(ret: %d):\n", ret);
-	hexdump(buf, sizeof(buf));
-#endif
+	ret = usb_get_desc_dev(dev);
 
 	char *man, *prod, *serial;
 	if(dev->iManufacturer) {
-		memset(buf, 0, sizeof(buf));
-		man = usb_get_string_simple(dev, dev->iManufacturer, buf, sizeof(buf));
+		man = usb_get_string_simple(dev, dev->iManufacturer);
 	} else {
 		man = (char*) malloc(11);
 		memset(man, '\0', sizeof(man));
 		strlcpy(man, "no String", 10);
 	}
 	if(dev->iProduct) {
-		memset(buf, 0, sizeof(buf));
-		prod = usb_get_string_simple(dev, dev->iProduct, buf, sizeof(buf));
+		prod = usb_get_string_simple(dev, dev->iProduct);
 	} else {
 		prod = (char*) malloc(11);
 		memset(prod, '\0', sizeof(prod));
 		strlcpy(prod, "no String", 10);
 	}
 	if(dev->iSerialNumber) {
-		memset(buf, 0, sizeof(buf));
-		serial = usb_get_string_simple(dev, dev->iSerialNumber, buf, sizeof(buf));
+		serial = usb_get_string_simple(dev, dev->iSerialNumber);
 	} else {
 		serial = (char*) malloc(11);
 		memset(serial, '\0', sizeof(serial));
 		strlcpy(serial, "no String", 10);
 	}
-
 
 	printf(	"bLength 0x%02X\n"
 			"bDescriptorType 0x%02X\n"
@@ -180,16 +162,8 @@ struct usb_device *usb_add_device()
 			dev->iSerialNumber, serial,
 			dev->bNumConfigurations);
 
-	memset(buf, 0, sizeof(buf));
 	/* in the most cases usb devices have just one configuration descriptor */
-	ret = usb_get_desc_configuration(dev, 0, buf, sizeof(buf));
-	printf("=============\nafter usb_get_desc_configuration(ret: %d):\n", ret);
-	hexdump(buf, sizeof(buf));
-
-	memset(buf, 0, sizeof(buf));
-	ret = usb_get_descriptor(dev, CONFIGURATION, 0, buf, dev->conf->wTotalLength);
-	printf("=============\nafter usb_get_HACK(ret: %d):\n", ret);
-	hexdump(buf, sizeof(buf));
+	ret = usb_get_desc_config_ext(dev, 0);
 
 	/* select configuration */
 	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
