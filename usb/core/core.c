@@ -108,7 +108,6 @@ struct usb_device *usb_add_device()
 		return (void*) -1;
 	}
 
-	u8 buf[8];
 //#define WTF
 #ifdef WTF
 	printf("lololololool PADDING WTF :O lolololololo \n");
@@ -162,15 +161,18 @@ struct usb_device *usb_add_device()
 	printf("=============\nusb_set_configuration(ret: %d) %d\n", ret, dev->conf->bConfigurationValue);
 	printf("=============\nusb_get_configuration: %d\n", usb_get_configuration(dev));
 
+#if 0
+	u8 buf[8];
 	memset(buf, 0, 8);
-	usb_control_msg(dev, 0x00, SET_INTERFACE, 0, dev->conf->intf->bInterfaceNumber, 8, buf, 0);
+	usb_control_msg(dev, 0x00, SET_INTERFACE, 0, dev->conf->intf->bInterfaceNumber, 0, buf, 0);
 	printf("=============\nusb_set_interface: %d\n", dev->conf->intf->bInterfaceNumber);
 	hexdump((void*)buf, 8);
 
 	memset(buf, 0, 8);
-	usb_control_msg(dev, 0x80, GET_INTERFACE, 0, 0, 8, buf, 0);
+	usb_control_msg(dev, 0x81, GET_INTERFACE, 0, dev->conf->intf->bInterfaceNumber, 8, buf, 0);
 	printf("=============\nusb_get_interface: %d\n", buf[0]);
 	hexdump((void*)buf, 8);
+#endif
 
 #if 0
 	/* add device to device list */

@@ -286,9 +286,6 @@ s8 usb_get_desc_config_ext(struct usb_device *dev, u8 index, struct usb_conf *co
 			off += 7;
 		}
 	}
-
-	printf("=============\nafter usb_get_desc_config_ext:\n");
-	hexdump((void*) gbuf, dev->conf->wTotalLength);
 	return 0;
 }
 
@@ -303,7 +300,9 @@ s8 usb_set_address(struct usb_device *dev, u8 address)
 u8 usb_get_configuration(struct usb_device *dev)
 {
 	cleargbuf();
-	usb_control_msg(dev, 0x80, GET_CONFIGURATION, 0, 0, 8, gbuf, 0);
+	usb_control_msg(dev, 0x80, GET_CONFIGURATION, 0, 0, 4, gbuf, 0);
+	printf("=============\nafter usb_get_configuration:\n");
+	hexdump((void*) gbuf, 1);
 	return gbuf[0];
 }
 
