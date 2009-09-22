@@ -108,20 +108,69 @@ struct usb_device *usb_add_device()
 		return (void*) -1;
 	}
 
-	/* set MaxPacketSize */
-
+	u8 buf[8];
+//#define WTF
+#ifdef WTF
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololol PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+#endif
 	u8 address = usb_next_address();
 	ret = usb_set_address(dev, address);
 	dev->address = address;
 	printf("set address to %d\n", dev->address);
 
+	/* get device descriptor&co */
 	ret = usb_get_desc_dev(dev);
+	if(ret < 0)
+		return (void*) -1;
+
+	/* print device info */
+	lsusb(dev);
 
 	/* select configuration */
 	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
 	printf("=============\nusb_set_configuration(ret: %d) %d\n", ret, dev->conf->bConfigurationValue);
+	printf("=============\nusb_get_configuration: %d\n", usb_get_configuration(dev));
 
-	lsusb(dev);
+	memset(buf, 0, 8);
+	usb_control_msg(dev, 0x00, SET_INTERFACE, 0, dev->conf->intf->bInterfaceNumber, 8, buf, 0);
+	printf("=============\nusb_set_interface: %d\n", dev->conf->intf->bInterfaceNumber);
+	hexdump((void*)buf, 8);
+
+	memset(buf, 0, 8);
+	usb_control_msg(dev, 0x80, GET_INTERFACE, 0, 0, 8, buf, 0);
+	printf("=============\nusb_get_interface: %d\n", buf[0]);
+	hexdump((void*)buf, 8);
 
 #if 0
 	/* add device to device list */

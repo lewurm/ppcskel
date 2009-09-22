@@ -70,6 +70,7 @@ char *usb_get_string_simple(struct usb_device *dev, u8 index);
 s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid);
 
 s8 usb_set_address(struct usb_device *dev, u8 address);
+u8 usb_get_configuration(struct usb_device *dev);
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration);
 s8 usb_set_altinterface(struct usb_device *dev, u8 alternate);
 

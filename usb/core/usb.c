@@ -299,6 +299,14 @@ s8 usb_set_address(struct usb_device *dev, u8 address)
 	return 0;
 }
 
+
+u8 usb_get_configuration(struct usb_device *dev)
+{
+	cleargbuf();
+	usb_control_msg(dev, 0x80, GET_CONFIGURATION, 0, 0, 8, gbuf, 0);
+	return gbuf[0];
+}
+
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
 	cleargbuf();
