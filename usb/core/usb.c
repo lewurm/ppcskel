@@ -234,8 +234,7 @@ s8 usb_get_desc_interface(struct usb_device *dev, u8 index, u8 *buf, u8 size)
 	if(size < 9) {
 		return -1;
 	}
-	usb_get_descriptor(dev, INTERFACE, index, buf, 8);
-	usb_get_descriptor(dev, INTERFACE, index, buf, size >= buf[0] ? buf[0] : size);
+	usb_get_descriptor(dev, INTERFACE, index, buf, 9);
 
 	return 0;
 }
@@ -249,7 +248,8 @@ s8 usb_set_address(struct usb_device *dev, u8 address)
 
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
-
+	u8 buf[64];
+	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration, 0, 0, buf, 0);
 	return 0;
 }
 

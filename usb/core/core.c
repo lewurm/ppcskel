@@ -110,7 +110,7 @@ struct usb_device *usb_add_device()
 	memset(buf, 0, sizeof(buf));
 	ret = usb_get_desc_dev_simple(dev, buf, sizeof(buf));
 #ifdef _DU_CORE_ADD
-	printf("=============\nbuf: 0x%08X\nafter usb_get_dev_desc_simple(ret: %d):\n", buf, ret);
+	printf("=============\nafter usb_get_dev_desc_simple(ret: %d):\n", ret);
 	hexdump(buf, sizeof(buf));
 #endif
 	if(ret < 0) {
@@ -129,7 +129,7 @@ struct usb_device *usb_add_device()
 	memset(buf, 0, sizeof(buf));
 	ret = usb_get_desc_dev(dev, buf, sizeof(buf));
 #ifdef _DU_CORE_ADD
-	printf("=============\nbuf: 0x%08X\nafter usb_get_dev_desc(ret: %d):\n", buf, ret);
+	printf("=============\nafter usb_get_dev_desc(ret: %d):\n", ret);
 	hexdump(buf, sizeof(buf));
 #endif
 
@@ -183,17 +183,30 @@ struct usb_device *usb_add_device()
 	memset(buf, 0, sizeof(buf));
 	/* in the most cases usb devices have just one configuration descriptor */
 	ret = usb_get_desc_configuration(dev, 0, buf, sizeof(buf));
-	printf("=============\nbuf: 0x%08X\nafter usb_get_desc_configuration(ret: %d):\n", buf, ret);
+	printf("=============\nafter usb_get_desc_configuration(ret: %d):\n", ret);
 	hexdump(buf, sizeof(buf));
 
-	printf("interfaces: %d\n", dev->conf->bNumInterfaces);
+	memset(buf, 0, sizeof(buf));
+	ret = usb_get_descriptor(dev, CONFIGURATION, 0, buf, dev->conf->wTotalLength);
+	printf("=============\nafter usb_get_HACK(ret: %d):\n", ret);
+	hexdump(buf, sizeof(buf));
+
+	/* select configuration */
+	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
+	printf("=============\nusb_set_configuration(ret: %d) %d\n", ret, dev->conf->bConfigurationValue);
+
+	/*
+	udelay(600000);
+
+	printf("=============\ninterfaces: %d\n", dev->conf->bNumInterfaces);
 	u8 i;
 	for(i = 1; i <= dev->conf->bNumInterfaces; i++) {
 		memset(buf, 0, sizeof(buf));
-		ret = usb_get_desc_interface(dev, i, buf, sizeof(buf));
-		printf("=============\nbuf: 0x%08X\nafter usb_get_desc_interface_%d(ret: %d):\n", buf, i, ret);
+		ret = usb_get_desc_interface(dev, 1, buf, sizeof(buf));
+		printf("=============\nafter usb_get_desc_interface_%d(ret: %d):\n", i, ret);
 		hexdump(buf, sizeof(buf));
 	}
+	*/
 
 
 
