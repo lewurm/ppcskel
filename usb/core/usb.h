@@ -67,9 +67,10 @@ s8 usb_reset(usb_device *dev);
 /******************* Control Transfer **********************/
 s8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length, u8 *buf, u16 timeout);
 s8 usb_get_string(usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen);
-s8 usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 buflen);
+char *usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size);
 s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size);
-s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size, u8 dev_desc_size);
+s8 usb_get_configuration(usb_device *dev, u8 index, u8 *buf, u8 size);
+s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size);
 s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size);
 
 

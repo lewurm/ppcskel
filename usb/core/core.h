@@ -53,16 +53,24 @@ inline static void wait_ms(int ms)
 
 typedef struct usb_device_t usb_device;
 struct usb_device_t {
-	u8  address;
-	u8  fullspeed;
-	u8  bMaxPacketSize0;
-	u8  bDeviceClass;
-	u8  bDeviceSubClass;
-	u8  bDeviceProtocoll;
-	u32 idVendor;
-	u32 idProduct;
-	u32 bcdDevice;
-	u8  bNumConfigurations;
+	u8 address;
+	u8 fullspeed;
+
+	/* device descriptor */
+	u8 bLength;
+	u8 bDescriptorType;
+	u16 bcdUSB;
+	u8 bDeviceClass;
+	u8 bDeviceSubClass;
+	u8 bDeviceProtocoll;
+	u8 bMaxPacketSize0;
+	u16 idVendor;
+	u16 idProduct;
+	u16 bcdDevice;
+	u8 iManufacturer;
+	u8 iProduct;
+	u8 iSerialNumber;
+	u8 bNumConfigurations;
 
 	u8 epSize[16];
 	u8 epTogl[16];

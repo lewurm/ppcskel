@@ -106,46 +106,87 @@ usb_device *usb_add_device()
 	memset(buf, 0, sizeof(buf));
 
 	s8 ret;
-	u8 dev_desc_size;
 	memset(buf, 0, sizeof(buf));
 	ret = usb_get_dev_desc_simple(dev, buf, sizeof(buf));
-	printf("=============\nbuf: 0x%08X\nafter usb control msg(ret: %d):\n", buf, ret);
+#ifdef _DU_CORE_ADD
+	printf("=============\nbuf: 0x%08X\nafter usb_get_dev_desc_simple(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
+#endif
+	if(ret < 0) {
+		return (void*) -1;
+	}
 
 	/* set MaxPacketSize */
-	dev->bMaxPacketSize0 = (u8) buf[7];
-	if(!(u8)buf[7]) {
-		printf("FU\n");
-		return (void*)1;
-	}
-	/* save device descriptor size */
-	dev_desc_size = buf[0];
 
 	u8 address = usb_next_address();
 	ret = usb_set_address(dev, address);
 	dev->address = address;
+#ifdef _DU_CORE_ADD
 	printf("set address to %d\n", dev->address);
+#endif
 
 	memset(buf, 0, sizeof(buf));
-	ret = usb_get_dev_desc(dev, buf, sizeof(buf), dev_desc_size);
-	printf("=============\nbuf: 0x%08X\nafter usb control msg(ret: %d):\n", buf, ret);
+	ret = usb_get_dev_desc(dev, buf, sizeof(buf));
+#ifdef _DU_CORE_ADD
+	printf("=============\nbuf: 0x%08X\nafter usb_get_dev_desc(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
+#endif
 
-	dev->bDeviceClass = (u8) buf[4];
-	dev->bDeviceSubClass = (u8) buf[5];
-	dev->bDeviceProtocoll = (u8) buf[6];
-	dev->idVendor = (u16) (buf[9] << 8) | (buf[8]);
-	dev->idProduct = (u16) (buf[11] << 8) | (buf[10]);
-	dev->bcdDevice = (u16) (buf[13] << 8) | (buf[12]);
+	char *man, *prod, *serial;
+	if(dev->iManufacturer) {
+		memset(buf, 0, sizeof(buf));
+		man = usb_get_string_simple(dev, dev->iManufacturer, buf, sizeof(buf));
+		printf("iManufacturer:\n");
+		hexdump(buf, sizeof(buf));
+	} else {
+		man = (char*) malloc(11);
+		memset(man, '\0', sizeof(man));
+		strlcpy(man, "no String", 10);
+	}
+	if(dev->iProduct) {
+		memset(buf, 0, sizeof(buf));
+		prod = usb_get_string_simple(dev, dev->iProduct, buf, sizeof(buf));
+	} else {
+		prod = (char*) malloc(11);
+		memset(prod, '\0', sizeof(prod));
+		strlcpy(prod, "no String", 10);
+	}
+	if(dev->iSerialNumber) {
+		memset(buf, 0, sizeof(buf));
+		serial = usb_get_string_simple(dev, dev->iSerialNumber, buf, sizeof(buf));
+	} else {
+		serial = (char*) malloc(11);
+		memset(serial, '\0', sizeof(serial));
+		strlcpy(serial, "no String", 10);
+	}
 
-	printf(	"bDeviceClass 0x%02X\n"
+
+	printf(	"bLength 0x%02X\n"
+			"bDescriptorType 0x%02X\n"
+			"bcdUSB 0x%02X\n"
+			"bDeviceClass 0x%02X\n"
 			"bDeviceSubClass 0x%02X\n"
 			"bDeviceProtocoll 0x%02X\n"
 			"idVendor 0x%04X\n"
 			"idProduct 0x%04X\n"
-			"bcdDevice 0x%04X\n", dev->bDeviceClass,
-			dev->bDeviceSubClass, dev->bDeviceProtocoll,
-			dev->idVendor, dev->idProduct, dev->bcdDevice);
+			"bcdDevice 0x%04X\n"
+			"iManufacturer(0x%02X): \"%s\"\n"
+			"iProduct(0x%02X): \"%s\"\n"
+			"iSerialNumber(0x%02X): \"%s\"\n"
+			"bNumConfigurations 0x%02X\n", dev->bLength, dev->bDeviceClass,
+			dev->bcdUSB, dev->bDescriptorType, dev->bDeviceSubClass, 
+			dev->bDeviceProtocoll, dev->idVendor, dev->idProduct, dev->bcdDevice, 
+			dev->iManufacturer, man,
+			dev->iProduct, prod,
+			dev->iSerialNumber, serial,
+			dev->bNumConfigurations);
+
+	memset(buf, 0, sizeof(buf));
+	/* in the most cases usb devices have just one configuration descriptor */
+	ret = usb_get_configuration(dev, 0, buf, sizeof(buf));
+	printf("=============\nbuf: 0x%08X\nafter usb_get_configuration(ret: %d):\n", buf, ret);
+	hexdump(buf, sizeof(buf));
+
 
 	/*
 	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
@@ -376,7 +417,6 @@ u16 usb_submit_irp(usb_irp *irp)
 		if (bmRequestType & 0x80) { 
 			/* schleife die die tds generiert */
 			while (runloop && (restlength > 0)) {
-				printf("restlength: %d\t irp->epsize: %d\n", restlength, irp->epsize);
 				td = usb_create_transfer_descriptor(irp);
 				td->actlen = irp->epsize;
 				/* stop loop if all bytes are send */

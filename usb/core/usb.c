@@ -90,44 +90,6 @@ s8 usb_close(usb_device *dev)
 	return 0;
 }
 
-/* ask first 8 bytes of device descriptor with this special 
- * GET Descriptor Request, when device address = 0
- */
-s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size)
-{
-	if(size < 8) {
-		return -1;
-	}
-	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
-	return 0;
-}
-
-s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size, u8 dev_desc_size)
-{
-	printf("WTF SIZE: 0x%X\n", size>= dev_desc_size ? dev_desc_size : size);
-	usb_get_descriptor(dev, DEVICE, 0, buf, size >= dev_desc_size ? dev_desc_size : size);
-	return 0;
-}
-
-s8 usb_set_address(usb_device *dev, u8 address)
-{
-	u8 buf[64];
-	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 0);
-	return 0;
-}
-
-s8 usb_set_configuration(usb_device *dev, u8 configuration)
-{
-
-	return 0;
-}
-
-s8 usb_set_altinterface(usb_device *dev, u8 alternate)
-{
-
-	return 0;
-}
-
 s8 usb_reset(usb_device *dev)
 {
 
@@ -178,11 +140,26 @@ s8 usb_get_string(usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen)
 }
 
 
-s8 usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size)
+char *usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size)
 {
+	if(size < 8) {
+		return (char*) -1;
+	}
 	usb_get_descriptor(dev, STRING, index, buf, (u8) 8);
-	usb_get_descriptor(dev, STRING, index, buf, size >= buf[0] ? (u8) buf[0] : size);
-	return 0;
+	size = size >= (buf[0]) ? (buf[0]) : size;
+	usb_get_descriptor(dev, STRING, index, buf, size);
+
+	char *str = (char*)malloc((size/2));
+	memset(str, '\0', (size/2));
+
+	u16 i;
+	for(i=0; i<(size/2)-1; i++) {
+		str[i] = buf[2+(i*2)];
+		printf("%c", str[i]);
+	}
+	printf("\n");
+
+	return str;
 }
 
 s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
@@ -190,6 +167,78 @@ s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
 	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (type << 8) | index, 0, size, buf, 0);
 	return 0;
 }
+
+/* ask first 8 bytes of device descriptor with this special 
+ * GET Descriptor Request, when device address = 0
+ */
+s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size)
+{
+	if(size < 8) {
+		return -1;
+	}
+	usb_get_descriptor(dev, DEVICE, 0, buf, 8);
+
+	if(!buf[7]) {
+		printf("FU: %d\n", buf[7]);
+		return -2;
+	}
+	dev->bMaxPacketSize0 = buf[7];
+	return 0;
+}
+
+s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size)
+{
+	if (size < 0x12 || usb_get_dev_desc_simple(dev, buf, size) < 0) {
+		return -1;
+	}
+	usb_get_descriptor(dev, DEVICE, 0, buf, size >= buf[0] ? buf[0] : size);
+
+	dev->bLength = buf[0];
+	dev->bDescriptorType = buf[1];
+	dev->bcdUSB = (u16) (buf[3] << 8 | buf[2]);
+	dev->bDeviceClass = buf[4];
+	dev->bDeviceSubClass = buf[5];
+	dev->bDeviceProtocoll = buf[6];
+	dev->idVendor = (u16) (buf[9] << 8) | (buf[8]);
+	dev->idProduct = (u16) (buf[11] << 8) | (buf[10]);
+	dev->bcdDevice = (u16) (buf[13] << 8) | (buf[12]);
+	dev->iManufacturer = buf[14];
+	dev->iProduct = buf[15];
+	dev->iSerialNumber = buf[16];
+	dev->bNumConfigurations = buf[17];
+
+	return 0;
+}
+
+s8 usb_get_configuration(usb_device *dev, u8 index, u8 *buf, u8 size)
+{
+	if(size < 8) {
+		return -1;
+	}
+	usb_get_descriptor(dev, CONFIGURATION, index, buf, 8);
+	usb_get_descriptor(dev, CONFIGURATION, index, buf, size >= buf[0] ? buf[0] : size);
+	return 0;
+}
+
+s8 usb_set_address(usb_device *dev, u8 address)
+{
+	u8 buf[64];
+	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 0);
+	return 0;
+}
+
+s8 usb_set_configuration(usb_device *dev, u8 configuration)
+{
+
+	return 0;
+}
+
+s8 usb_set_altinterface(usb_device *dev, u8 alternate)
+{
+
+	return 0;
+}
+
 
 
 /******************* Bulk Transfer **********************/
