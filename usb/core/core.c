@@ -89,6 +89,7 @@ void usb_periodic()
 struct usb_device *usb_add_device()
 {
 	struct usb_device *dev = (struct usb_device *) malloc(sizeof(struct usb_device));
+	dev->conf = (struct usb_conf *) malloc(sizeof(struct usb_conf));
 	dev->address = 0;
 	/* send at first time only 8 bytes */
 	dev->bMaxPacketSize0 = 8;
@@ -107,7 +108,7 @@ struct usb_device *usb_add_device()
 
 	s8 ret;
 	memset(buf, 0, sizeof(buf));
-	ret = usb_get_dev_desc_simple(dev, buf, sizeof(buf));
+	ret = usb_get_desc_dev_simple(dev, buf, sizeof(buf));
 #ifdef _DU_CORE_ADD
 	printf("=============\nbuf: 0x%08X\nafter usb_get_dev_desc_simple(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
@@ -126,7 +127,7 @@ struct usb_device *usb_add_device()
 #endif
 
 	memset(buf, 0, sizeof(buf));
-	ret = usb_get_dev_desc(dev, buf, sizeof(buf));
+	ret = usb_get_desc_dev(dev, buf, sizeof(buf));
 #ifdef _DU_CORE_ADD
 	printf("=============\nbuf: 0x%08X\nafter usb_get_dev_desc(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
@@ -136,8 +137,6 @@ struct usb_device *usb_add_device()
 	if(dev->iManufacturer) {
 		memset(buf, 0, sizeof(buf));
 		man = usb_get_string_simple(dev, dev->iManufacturer, buf, sizeof(buf));
-		printf("iManufacturer:\n");
-		hexdump(buf, sizeof(buf));
 	} else {
 		man = (char*) malloc(11);
 		memset(man, '\0', sizeof(man));
@@ -183,9 +182,19 @@ struct usb_device *usb_add_device()
 
 	memset(buf, 0, sizeof(buf));
 	/* in the most cases usb devices have just one configuration descriptor */
-	ret = usb_get_configuration(dev, 0, buf, sizeof(buf));
-	printf("=============\nbuf: 0x%08X\nafter usb_get_configuration(ret: %d):\n", buf, ret);
+	ret = usb_get_desc_configuration(dev, 0, buf, sizeof(buf));
+	printf("=============\nbuf: 0x%08X\nafter usb_get_desc_configuration(ret: %d):\n", buf, ret);
 	hexdump(buf, sizeof(buf));
+
+	printf("interfaces: %d\n", dev->conf->bNumInterfaces);
+	u8 i;
+	for(i = 1; i <= dev->conf->bNumInterfaces; i++) {
+		memset(buf, 0, sizeof(buf));
+		ret = usb_get_desc_interface(dev, i, buf, sizeof(buf));
+		printf("=============\nbuf: 0x%08X\nafter usb_get_desc_interface_%d(ret: %d):\n", buf, i, ret);
+		hexdump(buf, sizeof(buf));
+	}
+
 
 
 	/*

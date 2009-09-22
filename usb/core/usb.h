@@ -50,12 +50,6 @@ struct usb_device *usb_open_class(u8 class);
 s8 usb_close(struct usb_device *dev);
 
 
-s8 usb_get_device_descriptor(struct usb_device *dev, u8 *buf, u8 buflen);
-s8 usb_set_address(struct usb_device *dev, u8 address);
-s8 usb_set_configuration(struct usb_device *dev, u8 configuration);
-s8 usb_set_altinterface(struct usb_device *dev, u8 alternate);
-
-
 /**
  * usb_reset resets the specified device by sending a RESET down the port 
  * it is connected to. Returns 0 on success or < 0 on error.
@@ -66,12 +60,18 @@ s8 usb_reset(struct usb_device *dev);
 
 /******************* Control Transfer **********************/
 s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length, u8 *buf, u16 timeout);
-s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen);
-char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size);
-s8 usb_get_dev_desc_simple(struct usb_device *dev, u8 *buf, u8 size);
-s8 usb_get_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size);
-s8 usb_get_dev_desc(struct usb_device *dev, u8 *buf, u8 size);
 s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size);
+s8 usb_get_desc_dev_simple(struct usb_device *dev, u8 *buf, u8 size);
+s8 usb_get_desc_dev(struct usb_device *dev, u8 *buf, u8 size);
+s8 usb_get_desc_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size);
+s8 usb_get_desc_interface(struct usb_device *dev, u8 index, u8 *buf, u8 size);
+
+char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size);
+s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen);
+
+s8 usb_set_address(struct usb_device *dev, u8 address);
+s8 usb_set_configuration(struct usb_device *dev, u8 configuration);
+s8 usb_set_altinterface(struct usb_device *dev, u8 alternate);
 
 
 /******************* Bulk Transfer **********************/

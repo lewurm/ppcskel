@@ -171,7 +171,7 @@ s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 siz
 /* ask first 8 bytes of device descriptor with this special 
  * GET Descriptor Request, when device address = 0
  */
-s8 usb_get_dev_desc_simple(struct usb_device *dev, u8 *buf, u8 size)
+s8 usb_get_desc_dev_simple(struct usb_device *dev, u8 *buf, u8 size)
 {
 	if(size < 8) {
 		return -1;
@@ -186,9 +186,9 @@ s8 usb_get_dev_desc_simple(struct usb_device *dev, u8 *buf, u8 size)
 	return 0;
 }
 
-s8 usb_get_dev_desc(struct usb_device *dev, u8 *buf, u8 size)
+s8 usb_get_desc_dev(struct usb_device *dev, u8 *buf, u8 size)
 {
-	if (size < 0x12 || usb_get_dev_desc_simple(dev, buf, size) < 0) {
+	if (size < 0x12 || usb_get_desc_dev_simple(dev, buf, size) < 0) {
 		return -1;
 	}
 	usb_get_descriptor(dev, DEVICE, 0, buf, size >= buf[0] ? buf[0] : size);
@@ -210,13 +210,33 @@ s8 usb_get_dev_desc(struct usb_device *dev, u8 *buf, u8 size)
 	return 0;
 }
 
-s8 usb_get_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size)
+s8 usb_get_desc_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size)
 {
-	if(size < 8) {
+	if(size < 9) {
 		return -1;
 	}
 	usb_get_descriptor(dev, CONFIGURATION, index, buf, 8);
 	usb_get_descriptor(dev, CONFIGURATION, index, buf, size >= buf[0] ? buf[0] : size);
+
+	dev->conf->bLength = buf[0];
+	dev->conf->bDescriptorType = buf[1];
+	dev->conf->wTotalLength = (u16) (buf[3] << 8 | buf[2]);
+	dev->conf->bNumInterfaces = buf[4];
+	dev->conf->bConfigurationValue = buf[5];
+	dev->conf->iConfiguration = buf[6];
+	dev->conf->bmAttributes = buf[7];
+	dev->conf->bMaxPower = buf[8];
+	return 0;
+}
+
+s8 usb_get_desc_interface(struct usb_device *dev, u8 index, u8 *buf, u8 size)
+{
+	if(size < 9) {
+		return -1;
+	}
+	usb_get_descriptor(dev, INTERFACE, index, buf, 8);
+	usb_get_descriptor(dev, INTERFACE, index, buf, size >= buf[0] ? buf[0] : size);
+
 	return 0;
 }
 
