@@ -83,7 +83,7 @@ static void dbg_td_flag(u32 flag)
 }
 #endif
 
-static void general_td_fill(struct general_td *dest, const usb_transfer_descriptor *src)
+static void general_td_fill(struct general_td *dest, const struct usb_transfer_descriptor *src)
 {
 	if(src->actlen) {
 		dest->cbp = LE(virt_to_phys(src->buffer));
@@ -305,7 +305,7 @@ void hcdi_fire()
 /**
  * Enqueue a transfer descriptor.
  */
-u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
+u8 hcdi_enqueue(const struct usb_transfer_descriptor *td) {
 #ifdef _DU_OHCI_Q
 	printf("*()*()*()*()*()*()*() hcdi_enqueue(start)\n");
 #endif
@@ -354,7 +354,7 @@ u8 hcdi_enqueue(const usb_transfer_descriptor *td) {
 /**
  * Remove an transfer descriptor from transfer queue.
  */
-u8 hcdi_dequeue(usb_transfer_descriptor *td) {
+u8 hcdi_dequeue(struct usb_transfer_descriptor *td) {
 	return 0;
 }
 

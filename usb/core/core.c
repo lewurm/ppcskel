@@ -71,10 +71,10 @@ u8 usb_next_address()
 void usb_periodic()
 {
 	// call ever registered driver	
-	usb_driver *drv;
-	element *iterator = core.drivers->head;
+	struct usb_driver *drv;
+	struct element *iterator = core.drivers->head;
 	while (iterator != NULL) {
-		drv = (usb_driver *) iterator->data;
+		drv = (struct usb_driver *) iterator->data;
 		drv->check();
 		iterator = iterator->next;
 	}
@@ -86,9 +86,9 @@ void usb_periodic()
  * for the core. usb_add_device expected that
  * the device answers to address zero.
  */
-usb_device *usb_add_device()
+struct usb_device *usb_add_device()
 {
-	usb_device *dev = (usb_device *) malloc(sizeof(usb_device));
+	struct usb_device *dev = (struct usb_device *) malloc(sizeof(struct usb_device));
 	dev->address = 0;
 	/* send at first time only 8 bytes */
 	dev->bMaxPacketSize0 = 8;
@@ -281,7 +281,7 @@ usb_device *usb_add_device()
  * Find currently detached device and remove
  * data structures
  */
-u8 usb_remove_device(usb_device * dev)
+u8 usb_remove_device(struct usb_device * dev)
 {
 	// FIXME!!!! dieser quatsch ist nur temporaer
 	free(core.devices->head);
@@ -293,10 +293,10 @@ u8 usb_remove_device(usb_device * dev)
 /**
  * Register new driver at usb stack.
  */
-u8 usb_register_driver(usb_driver * dev)
+u8 usb_register_driver(struct usb_driver * dev)
 {
 	/* add driver to driver list */
-	element *tmp = (element *) malloc(sizeof(element));
+	struct element *tmp = (struct element *) malloc(sizeof(struct element));
 	tmp->data = (void *) dev;
 	tmp->next = NULL;
 	list_add_tail(core.drivers, tmp);
@@ -320,10 +320,10 @@ u8 usb_register_driver(usb_driver * dev)
 void usb_probe_driver()
 {
 	// call ever registered driver	
-	usb_driver *drv;
-	element *iterator = core.drivers->head;
+	struct usb_driver *drv;
+	struct element *iterator = core.drivers->head;
 	while (iterator != NULL) {
-		drv = (usb_driver *) iterator->data;
+		drv = (struct usb_driver *) iterator->data;
 		drv->probe();
 		iterator = iterator->next;
 	}
@@ -332,7 +332,7 @@ void usb_probe_driver()
 /**
  * Not implemented.
  */
-usb_irp *usb_get_irp()
+struct usb_irp *usb_get_irp()
 {
 	return 0;
 }
@@ -340,7 +340,7 @@ usb_irp *usb_get_irp()
 /**
  * Not implemented.
  */
-u8 usb_remove_irp(usb_irp * irp)
+u8 usb_remove_irp(struct usb_irp *irp)
 {
 
 	return 1;
@@ -352,9 +352,9 @@ u8 usb_remove_irp(usb_irp * irp)
  * In the usbstack they are transported with the
  * usb_transfer_descriptor data structure.
  */
-u16 usb_submit_irp(usb_irp *irp)
+u16 usb_submit_irp(struct usb_irp *irp)
 {
-	usb_transfer_descriptor *td;
+	struct usb_transfer_descriptor *td;
 	u8 runloop = 1;
 	u16 restlength = irp->len;
 	u8 *td_buf_ptr = irp->buffer;
@@ -533,10 +533,10 @@ u16 usb_submit_irp(usb_irp *irp)
 /** 
  * Create a transfer descriptor with an parent irp.
  */
-usb_transfer_descriptor *usb_create_transfer_descriptor(usb_irp * irp)
+struct usb_transfer_descriptor *usb_create_transfer_descriptor(struct usb_irp * irp)
 {
-	usb_transfer_descriptor *td =
-			(usb_transfer_descriptor *) malloc(sizeof(usb_transfer_descriptor));
+	struct usb_transfer_descriptor *td =
+			(struct usb_transfer_descriptor *) malloc(sizeof(struct usb_transfer_descriptor));
 
 	td->devaddress = irp->dev->address;
 	td->endpoint = irp->endpoint;

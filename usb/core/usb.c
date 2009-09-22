@@ -47,12 +47,12 @@
 /**
  * Open a device with verndor- and product-id for a communication.
  */
-usb_device *usb_open(u32 vendor_id, u32 product_id)
+struct usb_device *usb_open(u32 vendor_id, u32 product_id)
 {
-	usb_device* dev;
-	element * iterator = core.devices->head;
+	struct usb_device* dev;
+	struct element * iterator = core.devices->head;
 	while(iterator != NULL) {
-		dev = (usb_device*)iterator->data;
+		dev = (struct usb_device*)iterator->data;
 		
 		if(dev->idVendor==vendor_id&&dev->idProduct==product_id)
 			return dev;
@@ -67,12 +67,12 @@ usb_device *usb_open(u32 vendor_id, u32 product_id)
 /**
  * Open a device with an class code for a communication.
  */
-usb_device *usb_open_class(u8 class)
+struct usb_device *usb_open_class(u8 class)
 {
-	usb_device* dev;
-	element * iterator = core.devices->head;
+	struct usb_device* dev;
+	struct element * iterator = core.devices->head;
 	while(iterator != NULL) {
-		dev = (usb_device*)iterator->data;
+		dev = (struct usb_device*)iterator->data;
 		
 		if(dev->bDeviceClass==class)
 			return dev;
@@ -84,13 +84,13 @@ usb_device *usb_open_class(u8 class)
 
 /* Close device after a communication.
  */
-s8 usb_close(usb_device *dev)
+s8 usb_close(struct usb_device *dev)
 {
 
 	return 0;
 }
 
-s8 usb_reset(usb_device *dev)
+s8 usb_reset(struct usb_device *dev)
 {
 
 
@@ -103,10 +103,10 @@ s8 usb_reset(usb_device *dev)
 /**
  * Create a control transfer.
  */
-s8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request,
+s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request,
 		u16 value, u16 index, u16 length, u8 *buf, u16 timeout)
 {
-	usb_irp *irp = (usb_irp*)malloc(sizeof(usb_irp));
+	struct usb_irp *irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
 	irp->dev = dev;
 	irp->endpoint = 0;
 	
@@ -133,14 +133,14 @@ s8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request,
 }
 
 
-s8 usb_get_string(usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen)
+s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen)
 {
 
 	return 0;
 }
 
 
-char *usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size)
+char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size)
 {
 	if(size < 8) {
 		return (char*) -1;
@@ -162,7 +162,7 @@ char *usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size)
 	return str;
 }
 
-s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
+s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
 {
 	usb_control_msg(dev, 0x80, GET_DESCRIPTOR, (type << 8) | index, 0, size, buf, 0);
 	return 0;
@@ -171,7 +171,7 @@ s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size)
 /* ask first 8 bytes of device descriptor with this special 
  * GET Descriptor Request, when device address = 0
  */
-s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size)
+s8 usb_get_dev_desc_simple(struct usb_device *dev, u8 *buf, u8 size)
 {
 	if(size < 8) {
 		return -1;
@@ -186,7 +186,7 @@ s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size)
 	return 0;
 }
 
-s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size)
+s8 usb_get_dev_desc(struct usb_device *dev, u8 *buf, u8 size)
 {
 	if (size < 0x12 || usb_get_dev_desc_simple(dev, buf, size) < 0) {
 		return -1;
@@ -210,7 +210,7 @@ s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size)
 	return 0;
 }
 
-s8 usb_get_configuration(usb_device *dev, u8 index, u8 *buf, u8 size)
+s8 usb_get_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size)
 {
 	if(size < 8) {
 		return -1;
@@ -220,20 +220,20 @@ s8 usb_get_configuration(usb_device *dev, u8 index, u8 *buf, u8 size)
 	return 0;
 }
 
-s8 usb_set_address(usb_device *dev, u8 address)
+s8 usb_set_address(struct usb_device *dev, u8 address)
 {
 	u8 buf[64];
 	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, buf, 0);
 	return 0;
 }
 
-s8 usb_set_configuration(usb_device *dev, u8 configuration)
+s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
 
 	return 0;
 }
 
-s8 usb_set_altinterface(usb_device *dev, u8 alternate)
+s8 usb_set_altinterface(struct usb_device *dev, u8 alternate)
 {
 
 	return 0;
@@ -246,9 +246,9 @@ s8 usb_set_altinterface(usb_device *dev, u8 alternate)
 /**
  * Write to an a bulk endpoint.
  */
-s8 usb_bulk_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
+s8 usb_bulk_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-	usb_irp * irp = (usb_irp*)malloc(sizeof(usb_irp));
+	struct usb_irp * irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
 	irp->dev = dev;
 	//irp->devaddress = dev->address;
 	
@@ -269,9 +269,9 @@ s8 usb_bulk_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 /**
  * Read from an bulk endpoint.
  */
-s8 usb_bulk_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
+s8 usb_bulk_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-	usb_irp * irp = (usb_irp*)malloc(sizeof(usb_irp));
+	struct usb_irp * irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
 	//irp->devaddress = dev->address;
 	irp->dev = dev;
 	
@@ -294,7 +294,7 @@ s8 usb_bulk_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 /**
  * Write to an interrupt endpoint.
  */
-s8 usb_interrupt_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
+s8 usb_interrupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 	return 0;
@@ -303,7 +303,7 @@ s8 usb_interrupt_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 /**
  * Read from an interrupt endpoint.
  */
-s8 usb_interrupt_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
+s8 usb_interrupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 	return 0;
@@ -315,7 +315,7 @@ s8 usb_interrupt_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 /**
  * Write to an isochron endpoint.
  */
-s8 usb_isochron_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
+s8 usb_isochron_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 	return 0;
@@ -324,7 +324,7 @@ s8 usb_isochron_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 /**
  * Read from an isochron endpoint.
  */
-s8 usb_isochron_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
+s8 usb_isochron_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
 
 

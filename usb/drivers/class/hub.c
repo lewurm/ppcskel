@@ -44,7 +44,7 @@ void usb_hub_probe();
 void usb_hub_check();
 
 
-usb_driver hub = {
+struct usb_driver hub = {
 	.name	  = "hub",
 	.probe  = usb_hub_probe,
 	.check  = usb_hub_check,
@@ -65,8 +65,7 @@ void usb_hub_probe()
 	#endif
 	wait_ms(1000);
 	
-	usb_device * dev;
-	dev = usb_open_class(HUB_CLASSCODE);
+	struct usb_device *dev = usb_open_class(HUB_CLASSCODE);
 	if(dev != NULL){
 		hub.data = (void*)dev;		/* save handle */
 		#if DEBUG
@@ -97,51 +96,51 @@ void usb_hub_check()
 }
 
 
-u8 usb_hub_get_hub_descriptor(usb_device *dev, char * buf)
+u8 usb_hub_get_hub_descriptor(struct usb_device *dev, char * buf)
 {
 	return 0;  
 }
 
-u8 usb_hub_get_hub_status(usb_device *dev, char *buf)
-{
-
-
-	return 0;  
-}
-
-
-u8 usb_hub_get_port_status(usb_device *dev, char *buf)
+u8 usb_hub_get_hub_status(struct usb_device *dev, char *buf)
 {
 
 
 	return 0;  
 }
 
-u8 usb_hub_clear_port_feature(usb_device *dev)
+
+u8 usb_hub_get_port_status(struct usb_device *dev, char *buf)
+{
+
+
+	return 0;  
+}
+
+u8 usb_hub_clear_port_feature(struct usb_device *dev)
 {
 
 	return 0;  
 }
 
-u8 usb_hub_set_port_feature(usb_device *dev, u8 value)
+u8 usb_hub_set_port_feature(struct usb_device *dev, u8 value)
 {
 
 	return 0;  
 }
 
-u8 usb_hub_clear_hub_feature(usb_device *dev)
+u8 usb_hub_clear_hub_feature(struct usb_device *dev)
 {
 
 	return 0;  
 }
 
-u8 usb_hub_set_hub_feature(usb_device *dev)
+u8 usb_hub_set_hub_feature(struct usb_device *dev)
 {
 
 	return 0;  
 }
 
-u8 usb_hub_set_hub_descriptor(usb_device *dev)
+u8 usb_hub_set_hub_descriptor(struct usb_device *dev)
 {
 
 	return 0;  

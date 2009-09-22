@@ -46,13 +46,7 @@ inline static void wait_ms(int ms)
 		udelay(1000);
 }
 
-/**
- * Main datastructure of the usbstack, which have to be instanced
- * in the main application.
- */
-
-typedef struct usb_device_t usb_device;
-struct usb_device_t {
+struct usb_device {
 	u8 address;
 	u8 fullspeed;
 
@@ -75,39 +69,44 @@ struct usb_device_t {
 	u8 epSize[16];
 	u8 epTogl[16];
 
-	usb_device *next;
+	struct usb_conf *conf;
+	struct usb_device *next;
 };
 
+struct usb_conf {
+	u8 bLength;
+	u8 bDescriptorType;
+	u16 wTotalLength;
+	u8 bNumInterfaces;
+	u8 bConfigurationValue;
+	u8 iConfiguration;
+	u8 bmAttributes;
+	u8 bMaxPower;
+};
 
-typedef struct usb_endpoint_t usb_endpoint;
-struct usb_endpoint_t {
+struct usb_endpoint {
 	u8 type;
 	u8 size;
 	u8 togl;
-	usb_endpoint *next;
+	struct usb_endpoint *next;
 };
 
-
-
-
-typedef struct usb_transfer_descriptor_ep_t usb_transfer_descriptor_ep;
-struct usb_transfer_descriptor_ep_t {
-	usb_transfer_descriptor_ep *next;
+struct usb_transfer_descriptor_ep {
+	struct usb_transfer_descriptor_ep *next;
 	u8 device_address;
 	u8 endpoint;
-	struct usb_transfer_descriptor_t *start;
+	struct usb_transfer_descriptor *start;
 };
 
 /**
  * USB Driver data structure
  */
-typedef struct usb_driver_t usb_driver;
-struct usb_driver_t {
+struct usb_driver {
 	char* name;
 	void (*probe)(void);
 	void (*check)(void);
 	void * data;
-	usb_driver *next;
+	struct usb_driver *next;
 };
 
 
@@ -115,12 +114,13 @@ struct usb_driver_t {
  * I/O Request Block
  */
 
-typedef struct usb_irp_t usb_irp;
-struct usb_irp_t {
-	usb_device * dev;
-	u8 endpoint;				/* ep -> bit 7 is for direction 1=from	dev to host */
+struct usb_irp {
+	struct usb_device *dev;
+	/* ep -> bit 7 is for direction 1=from	dev to host */
+	u8 endpoint;
 	u8 epsize;
-	u8 type;				/* control, interrupt, bulk or isochron */
+	/* control, interrupt, bulk or isochron */
+	u8 type;
 
 	u8 *buffer;
 	u16 len;
@@ -133,8 +133,7 @@ struct usb_irp_t {
 /**
  * usb transfer descriptor
  */
-typedef struct usb_transfer_descriptor_t usb_transfer_descriptor;
-struct usb_transfer_descriptor_t {
+struct usb_transfer_descriptor {
 	u8 devaddress;
 	u8 endpoint;
 	
@@ -147,17 +146,16 @@ struct usb_transfer_descriptor_t {
 	u16 actlen;
 	
 	u8 state;
-	usb_transfer_descriptor *next;
+	struct usb_transfer_descriptor *next;
 	u8 maxp;
 };
 
-//typedef struct usb_core_t usb_core;
-struct usb_core_t {
+struct usb_core {
 	u8 nextaddress;
 	void (*stdout)(char * arg); 
 	// driver list
-	list * drivers;
-	list * devices;
+	struct list *drivers;
+	struct list *devices;
 } core;
 
 void usb_init();
@@ -165,19 +163,19 @@ void usb_periodic();
 u8 usb_next_address();
 
 
-usb_device * usb_add_device();
-u8 usb_remove_device(usb_device *dev);
-u8 usb_register_driver(usb_driver *driver);
+struct usb_device *usb_add_device();
+u8 usb_remove_device(struct usb_device *dev);
+u8 usb_register_driver(struct usb_driver *driver);
 void usb_probe_driver();
 
 
 
-usb_irp * usb_get_irp();
-u8 usb_remove_irp(usb_irp *irp);
-u16 usb_submit_irp(usb_irp *irp);
+struct usb_irp *usb_get_irp();
+u8 usb_remove_irp(struct usb_irp *irp);
+u16 usb_submit_irp(struct usb_irp *irp);
 
 
-usb_transfer_descriptor * usb_create_transfer_descriptor(usb_irp *irp);
+struct usb_transfer_descriptor *usb_create_transfer_descriptor(struct usb_irp *irp);
 
 
 #define USB_IRP_WAITING		1

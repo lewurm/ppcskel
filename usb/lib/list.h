@@ -37,28 +37,25 @@
 #include "../../types.h"
 
 
-typedef struct element_t element;
-struct element_t {
-	void * data;
-	element * next;
+struct element {
+	void *data;
+	struct element *next;
 };
 
 
-typedef struct list_t list;
-struct list_t {
-	element * head;
+struct list {
+	struct element *head;
 };
 
 
+struct list *list_create(void);
 
-list* list_create();
+u8 list_add_tail(struct list *l, struct element *e);
+u8 list_delete_element(struct list *l, struct element *e);
 
-u8 list_add_tail(list *l, element *e);
-u8 list_delete_element(list *l, element *e);
+u8 list_is_element_last(struct list *l, struct element *e);
 
-u8 list_is_element_last(list *l, element *e);
-
-element * list_find_next_element(list *l, element *e);
-
+struct element *list_find_next_element(struct list *l, struct element *e);
 
 #endif // _LIST_H_
+

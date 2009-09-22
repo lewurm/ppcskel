@@ -50,11 +50,11 @@ void hcdi_init();
 /**
  * Enqueue a transfer descriptor.
  */
-u8 hcdi_enqueue(const usb_transfer_descriptor *td);
+u8 hcdi_enqueue(const struct usb_transfer_descriptor *td);
 /**
  * Remove an transfer descriptor from transfer queue.
  */
-u8 hcdi_dequeue(usb_transfer_descriptor *td);
+u8 hcdi_dequeue(struct usb_transfer_descriptor *td);
 
 void hcdi_fire(void);
 

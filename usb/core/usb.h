@@ -44,16 +44,16 @@
 /******************* Device Operations **********************/
 
 // use an own usb device
-usb_device * usb_open(u32 vendor_id, u32 product_id);
-usb_device * usb_open_class(u8 class);
+struct usb_device *usb_open(u32 vendor_id, u32 product_id);
+struct usb_device *usb_open_class(u8 class);
 
-s8 usb_close(usb_device *dev);
+s8 usb_close(struct usb_device *dev);
 
 
-s8 usb_get_device_descriptor(usb_device *dev, u8 *buf, u8 buflen);
-s8 usb_set_address(usb_device *dev, u8 address);
-s8 usb_set_configuration(usb_device *dev, u8 configuration);
-s8 usb_set_altinterface(usb_device *dev, u8 alternate);
+s8 usb_get_device_descriptor(struct usb_device *dev, u8 *buf, u8 buflen);
+s8 usb_set_address(struct usb_device *dev, u8 address);
+s8 usb_set_configuration(struct usb_device *dev, u8 configuration);
+s8 usb_set_altinterface(struct usb_device *dev, u8 alternate);
 
 
 /**
@@ -61,31 +61,31 @@ s8 usb_set_altinterface(usb_device *dev, u8 alternate);
  * it is connected to. Returns 0 on success or < 0 on error.
  */
 
-s8 usb_reset(usb_device *dev);
+s8 usb_reset(struct usb_device *dev);
 
 
 /******************* Control Transfer **********************/
-s8 usb_control_msg(usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length, u8 *buf, u16 timeout);
-s8 usb_get_string(usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen);
-char *usb_get_string_simple(usb_device *dev, u8 index, u8 *buf, u8 size);
-s8 usb_get_dev_desc_simple(usb_device *dev, u8 *buf, u8 size);
-s8 usb_get_configuration(usb_device *dev, u8 index, u8 *buf, u8 size);
-s8 usb_get_dev_desc(usb_device *dev, u8 *buf, u8 size);
-s8 usb_get_descriptor(usb_device *dev, u8 type, u8 index, u8 *buf, u8 size);
+s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request, u16 value, u16 index, u16 length, u8 *buf, u16 timeout);
+s8 usb_get_string(struct usb_device *dev, u8 index, u8 langid, u8 *buf, u8 buflen);
+char *usb_get_string_simple(struct usb_device *dev, u8 index, u8 *buf, u8 size);
+s8 usb_get_dev_desc_simple(struct usb_device *dev, u8 *buf, u8 size);
+s8 usb_get_configuration(struct usb_device *dev, u8 index, u8 *buf, u8 size);
+s8 usb_get_dev_desc(struct usb_device *dev, u8 *buf, u8 size);
+s8 usb_get_descriptor(struct usb_device *dev, u8 type, u8 index, u8 *buf, u8 size);
 
 
 /******************* Bulk Transfer **********************/
-s8 usb_bulk_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
-s8 usb_bulk_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_bulk_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_bulk_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
 
 
 /******************* Interrupt Transfer **********************/
-s8 usb_u8errupt_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
-s8 usb_u8errupt_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_u8errupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_u8errupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
 
 
 /******************* Isochron Transfer **********************/
-s8 usb_isochron_write(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
-s8 usb_isochron_read(usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_isochron_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_isochron_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
 
 #endif	//_USB_H_

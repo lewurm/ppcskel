@@ -48,11 +48,11 @@
 void usb_storage_probe();
 void usb_storage_check();
 
-usb_device * massstorage[MAX_DEVICES];
+struct usb_device *massstorage[MAX_DEVICES];
 u16 sectorsize[MAX_DEVICES];
 u8 massstorage_in_use;
 
-usb_driver storage = {
+struct usb_driver storage = {
 	.name	  = "storage",
 	.probe  = usb_storage_probe,
 	.check  = usb_storage_check,
@@ -76,11 +76,11 @@ void usb_storage_probe()
 	/* read interface descriptor for class code */
 	u8 buf[32];
 	
-	usb_device* dev;
-	element * iterator = core.devices->head;
+	struct usb_device* dev;
+	struct element * iterator = core.devices->head;
 	
 	while(iterator != NULL) {
-		dev = (usb_device*)iterator->data;
+		dev = (struct usb_device*)iterator->data;
 
 		/* get interface descriptor */
 		usb_control_msg(dev, 0x80, GET_DESCRIPTOR,2, 0, 32, buf, 0);

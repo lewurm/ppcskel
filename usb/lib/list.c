@@ -35,14 +35,14 @@
 #include "list.h"
 #include "../../malloc.h"
 
-list* list_create()
+struct list* list_create()
 {
-	list *l = (list*)malloc(sizeof(list));
+	struct list *l = (struct list*)malloc(sizeof(struct list));
 	l->head = NULL;
 	return l;
 }
 
-u8 list_add_tail(list *l, element *e)
+u8 list_add_tail(struct list *l, struct element *e)
 {
 	e->next = NULL;
 
@@ -53,8 +53,7 @@ u8 list_add_tail(list *l, element *e)
 	}
 
 	/* find last element */
-	element * iterator;
-	iterator = l->head;
+	struct element * iterator = l->head;
 
 	while(iterator->next!=NULL) {
 		iterator = iterator->next;
@@ -67,13 +66,13 @@ u8 list_add_tail(list *l, element *e)
 
 
 // FIXME: untested and unused!! 
-u8 list_delete_element(list *l, element *e)
+u8 list_delete_element(struct list *l, struct element *e)
 {
 	return 1;
 }
 
 // FIXME: untested and unused!! 
-u8 list_is_element_last(list *l, element *e)
+u8 list_is_element_last(struct list *l, struct element *e)
 {
 	if(e->next==NULL)
 		return 1;
@@ -84,10 +83,9 @@ u8 list_is_element_last(list *l, element *e)
 
 
 // FIXME: untested and unused!! 
-element * list_find_next_element(list *l, element *e)
+struct element *list_find_next_element(struct list *l, struct element *e)
 {
-	element * iterator;
-	iterator = l->head;
+	struct element *iterator = l->head;
 
 	while(iterator!=NULL){
 		if(iterator == e)
