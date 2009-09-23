@@ -397,7 +397,6 @@ s8 usb_interrupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeou
 	irp->len = size;
 	irp->timeout = timeout;
 
-	printf("interupt_read\n");
 	usb_submit_irp(irp);
 	free(irp);
 

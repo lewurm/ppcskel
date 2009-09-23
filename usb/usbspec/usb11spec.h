@@ -183,6 +183,7 @@ struct usb_device_request_t
 #define USB_PID_PRE     0x0C
 
 
+#define HID_CLASSCODE 	0x03
 #define MASS_STORAGE_CLASSCODE	0x08
 #define HUB_CLASSCODE		0x09
 

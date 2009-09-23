@@ -26,6 +26,7 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "console.h"
 #include "irq.h"
 #include "usb/core/core.h"
+#include "usb/drivers/class/hid.h"
 #include "hollywood.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
@@ -119,14 +120,47 @@ int main(void)
 
 	/* external ohci */
 	usb_init(OHCI0_REG_BASE);
+
 	/* internal ohci */
 	//usb_init(OHCI1_REG_BASE);
 
-	/*
-    print_str_noscroll(112, 112, "ohai, world!\n");
-	testOTP();
-	printf("bye, world!\n");
-	*/
+	/* load HID keyboard driver */
+	usb_hidkb_init();
+
+	/* you are welcome to make this nice :) */
+	char str[7];
+	u16 i, j, y=20, x=20;
+	struct kbrep *k;
+
+	while(1) {
+		memset(str, '\0', 8);
+		j=0;
+		k = usb_hidkb_getChars();
+		for(i=0; k->keys[i]>0; i++) {
+			if(x>650) {
+				x = 20;
+				y += 15;
+			}
+			if(y>440) {
+				y=20;
+			}
+			if((k->keys[i] >= 4) && k->keys[i] <= 4+'z'-'a') {
+				str[j] = k->keys[i] - 4 + 'a';
+			} 
+			else if (k->keys[i] == 0x28) {
+				y += 15;
+				x = 20;
+			}
+			j++;
+		}
+		if(j > 0) {
+			print_str_noscroll(x, y, str);
+			printf("y: %d\n", y);
+		}
+		while(j--) {
+			x += 13;
+		}
+	}
 
 	return 0;
 }

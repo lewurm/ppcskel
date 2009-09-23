@@ -119,26 +119,6 @@ void usb_storage_check()
 
 
 
-/**
- * open connection to an storage device
- */
-u8 usb_storage_open(u8 device)
-{
-	/* set configuration */
-	u8 tmp[8];
-	usb_control_msg(massstorage[device], 0x00,SET_CONFIGURATION,0x0100, 0, 0, tmp, 0);
-
-
-	/* class request */
-	usb_control_msg(massstorage[device], 0xA1,0xFE,0, 0, 1,tmp, 0);
-
-	/* wait until the stick is complete ready */
-	wait_ms(10);
-	
-	//FIXME and all other return values!!!
-	return 1;
-}
-
 u8 usb_storage_inquiry(u8 device)
 {
 	/* send cwb "usbc" */

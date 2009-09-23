@@ -114,10 +114,151 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 
 #define WTF
 #ifdef WTF
-	printf("lololol PADDING WTF :O lolololololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lolololool PADDING WTF :O lololoololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lololoololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lolololool PADDING WTF :O lolololololo \n");
+	printf("lololololool PADDING WTF :O lolololololo \n");
+	printf("lollllool PADDING WTF :O lolololololo \n");
 	printf("lolololool PADDING WTF :O lolololololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lollllool PADDING WTF :O lolololololo \n");
@@ -135,71 +276,10 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	/* print device info */
 	//lsusb(dev);
 
-	//HID only!
-#define GET_PROTOCOL 0x03
-#define SET_PROTOCOL 0x0b
-#define GETit 0xa1
-#define SETit 0x21
-
-
-	u8 buf[255];
-#if 1
-	/* select configuration */
-	wait_ms(500);
-	ret = usb_set_configuration(dev, 1);
-	printf("=============\nusb_set_configuration(ret: %d): %d\n", ret, dev->conf->bConfigurationValue);
-	wait_ms(500);
-#if 0
-	wait_ms(500);
-	printf("=============\nusb_get_configuration: %d (should be 1 here)\n", usb_get_configuration(dev));
-#endif
-#endif
 
 #if 1
-	memset(buf, 0, 0xff);
-	usb_control_msg(dev, (1<<5)|1, SET_CONFIGURATION, 0x200, 0x0, 0x0, buf, 0);
-	printf("wtf request\n");
-	hexdump((void*)buf, 0x8);
-#endif
-
-
-#if 0
-	/* set protocol */
-	/* see p48 in HID spec */
-	memset(buf, 0, 8);
-	usb_control_msg(dev, SETit, SET_PROTOCOL, 0 /*boot protocol*/, 0 /*interface number*/, 0 /*length*/, buf, 0);
-	printf("=============\nhid_set_protocol %d\n", 0);
-	hexdump((void*)buf, 8);
-#endif
-#if 0
-	memset(buf, 0, 8);
-	usb_control_msg(dev, GETit, GET_PROTOCOL, 0, 0, 4, buf, 0);
-	printf("=============\nusb_get_protocol: %d\n", buf[0]);
-	hexdump((void*)buf, 8);
-#endif
-
-#if 1
-	/* I just don't know why on some devices 
-	 * {s,g}et_{configuration,interface} won't work.
-	 * may the setter works and getter are poorly implemented?
-	 * however, I try here some interrupt inputs, assuming 
-	 * the setters are fine*/
-
-	memset(buf, 0, 8);
-	s8 epnum = dev->conf->intf->endp->bEndpointAddress & 0xf;
-	printf("epnum: 0x%04X\n", epnum);
-	u8 muh = 10;
-	while(muh--) {
-		(void) usb_interrupt_read(dev, epnum, buf, 8, 0);
-		printf("============\nusb_interrupt_read:\n");
-		hexdump((void*)buf, 8);
-		udelay(2000000);
-	}
-#endif
-
-#if 0
 	/* add device to device list */
-	element *tmp = (element *) malloc(sizeof(element));
+	struct element *tmp = (struct element *) malloc(sizeof(struct element));
 	tmp->data = (void *) dev;
 	list_add_tail(core.devices, tmp);
 
@@ -289,14 +369,13 @@ u8 usb_remove_device(struct usb_device * dev)
 /**
  * Register new driver at usb stack.
  */
-u8 usb_register_driver(struct usb_driver * dev)
+u8 usb_register_driver(struct usb_driver *dev)
 {
 	/* add driver to driver list */
 	struct element *tmp = (struct element *) malloc(sizeof(struct element));
 	tmp->data = (void *) dev;
 	tmp->next = NULL;
 	list_add_tail(core.drivers, tmp);
-
 
 	/** 
 	 * first check to find a suitable device 
