@@ -88,7 +88,10 @@ int main(void)
 	irq_initialize();
 	irq_bw_enable(BW_PI_IRQ_RESET);
 	irq_bw_enable(BW_PI_IRQ_HW); //hollywood pic
+	/* external ohci */
 	irq_hw_enable(IRQ_OHCI0);
+	/* internal ohci */
+	//irq_hw_enable(IRQ_OHCI1);
 
 	ipc_initialize();
 	ipc_slowping();
@@ -114,8 +117,10 @@ int main(void)
 			; // better ideas welcome!
 	}
 
+	/* external ohci */
 	usb_init(OHCI0_REG_BASE);
-	usb_init(OHCI1_REG_BASE);
+	/* internal ohci */
+	//usb_init(OHCI1_REG_BASE);
 
 	/*
     print_str_noscroll(112, 112, "ohai, world!\n");

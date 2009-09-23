@@ -112,7 +112,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 	}
 
-//#define WTF
+#define WTF
 #ifdef WTF
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
@@ -160,12 +160,10 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	/* print device info */
 	lsusb(dev);
 
-#if 0
 	/* select configuration */
 	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
-	printf("=============\nusb_set_configuration(ret: %d) %d\n", ret, dev->conf->bConfigurationValue);
+	printf("=============\nusb_set_configuration(ret: %d): %d\n", ret, dev->conf->bConfigurationValue);
 	printf("=============\nusb_get_configuration: %d\n", usb_get_configuration(dev));
-#endif
 
 #if 0
 	u8 buf[8];
