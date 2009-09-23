@@ -31,6 +31,7 @@ struct kbrep {
 void usb_hidkb_probe();
 void usb_hidkb_check();
 void usb_hidkb_init();
+u8 usb_hidkb_inuse();
 
 struct kbrep *usb_hidkb_getChars();
 

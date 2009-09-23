@@ -123,34 +123,23 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 
 #define WTF
 #ifdef WTF
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
+	volatile u8 wzf = 11;
+	if(0 == wzf) {
+		printf("WTF WTF WTF WTF padding??? WTFWTF WTF\n");
+		printf("WTF WTF WTF WTF padding??? WTF WTF WTF\n");
+		printf("WTF TF WTF WTF padding??? WTF WTF WTF\n");
+		printf("WTF WTF TF WTF padding??? WTF WTWTF\n");
+		printf("TF WTF WTF WTF padding??? WTF WTF WTF\n");
+		printf("WTF WTF WTF WT padding??? WTF WF WTF\n");
+		printf("WTF WTF WTF WTF padding??? WTF WTF WTF\n");
+		printf("WTF WTF WTF WTF padding??? WT WTF WTF\n");
+		printf("WTF WTF WTF WTF pdding??? WTF WTF WTF\n");
+		printf("WTF WTF WTF WTF paddin??? WTF WTF WTF\n");
+		printf("WTF WTF WTF WTF padding??? WTF WTF WTF\n");
+		printf("WTF WTF WTF WTF padding?? WT WTF WTF\n");
+		printf("WTF WTF WTF WTF padding??? WTF WTF WTF\n");
+		printf("WTF WTF WTF WTF padding??? WTFWTF WTF\n");
+	}
 #endif
 	u8 address = usb_next_address();
 	ret = usb_set_address(dev, address);

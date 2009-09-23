@@ -123,10 +123,16 @@ int main(void)
 	usb_init(OHCI0_REG_BASE);
 
 	/* internal ohci */
-	//usb_init(OHCI1_REG_BASE);
+	usb_init(OHCI1_REG_BASE);
 
 	/* load HID keyboard driver */
 	usb_hidkb_init();
+
+	/* wait for usb keyboard plugged in */
+	if(!usb_hidkb_inuse()) {
+		print_str("plug in an usb keyboard", 23);
+	}
+	while(!usb_hidkb_inuse());
 
 	/* you are welcome to make this nice :) */
 	char str[7];

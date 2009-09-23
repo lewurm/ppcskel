@@ -303,7 +303,6 @@ s8 usb_set_address(struct usb_device *dev, u8 address)
 {
 	cleargbuf();
 	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, gbuf, 0);
-	hexdump((void*) gbuf, 8);
 	wait_ms(210);
 	return 0;
 }

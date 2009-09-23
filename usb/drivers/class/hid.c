@@ -36,6 +36,9 @@ void usb_hidkb_probe()
 	
 	while(iterator != NULL) {
 		dev = (struct usb_device*)iterator->data;
+		if(dev == NULL) {
+			continue;
+		}
 
 		if(dev->conf->intf->bInterfaceClass == HID_CLASSCODE &&
 				dev->conf->intf->bInterfaceSubClass == 1 && /* keyboard support boot protocol? */
@@ -49,6 +52,11 @@ void usb_hidkb_probe()
 
 void usb_hidkb_check()
 {
+}
+
+u8 usb_hidkb_inuse()
+{
+	return hidkb.data ? 1 : 0;
 }
 
 struct kbrep *usb_hidkb_getChars() {
