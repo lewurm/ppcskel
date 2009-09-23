@@ -191,10 +191,9 @@ void hcdi_fire(u32 reg)
 	/* poll until edhead->headp is null */
 	do {
 		sync_before_read(edhead, sizeof(struct endpoint_descriptor));
-//#ifdef _DU_OHCI_F
+#ifdef _DU_OHCI_F
 		printf("edhead->headp: 0x%08X\n", LE(edhead->headp));
-//#endif
-		udelay(10000);
+#endif
 
 		/* if halted, debug output plz. will break the transfer */
 		if((LE(edhead->headp) & OHCI_ENDPOINT_HALTED)) {

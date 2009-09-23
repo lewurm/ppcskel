@@ -292,6 +292,7 @@ s8 usb_set_address(struct usb_device *dev, u8 address)
 {
 	cleargbuf();
 	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, gbuf, 0);
+	hexdump((void*) gbuf, 8);
 	wait_ms(210);
 	return 0;
 }
@@ -309,8 +310,10 @@ u8 usb_get_configuration(struct usb_device *dev)
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
 	cleargbuf();
-	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration, 0, 0, gbuf, 0);
-	wait_ms(50);
+	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration<<8, 0, 0, gbuf, 0);
+	printf("=============\nafter usb_set_configuration:\n");
+	hexdump((void*) gbuf, 8);
+	wait_ms(20);
 	return 0;
 }
 
