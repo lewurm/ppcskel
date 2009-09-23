@@ -31,8 +31,17 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*
+	ppcskel - a Free Software replacement for the Nintendo/BroadOn bootloader.
+	plugmii core
 
-//#include <stdlib.h>
+Copyright (C) 2009     Bernhard Urban <lewurm@gmx.net>
+Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
+
+# This code is licensed to you under the terms of the GNU GPL, version 2;
+# see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+*/
+
 #include "core.h"
 #include "../host/host.h"
 #include "usb.h"
@@ -112,128 +121,8 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 	}
 
-#define WTF
+//#define WTF
 #ifdef WTF
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lolololool PADDING WTF :O lololoololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lolololool PADDING WTF :O lolololololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
@@ -274,17 +163,14 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 
 	/* print device info */
-	//lsusb(dev);
+	lsusb(dev);
 
-
-#if 1
 	/* add device to device list */
 	struct element *tmp = (struct element *) malloc(sizeof(struct element));
 	tmp->data = (void *) dev;
 	list_add_tail(core.devices, tmp);
 
 	usb_probe_driver();
-#endif
 
 	return dev;
 }

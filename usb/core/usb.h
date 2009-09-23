@@ -33,6 +33,16 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*
+	ppcskel - a Free Software replacement for the Nintendo/BroadOn bootloader.
+	libusb like interface
+
+Copyright (C) 2009     Bernhard Urban <lewurm@gmx.net>
+Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
+
+# This code is licensed to you under the terms of the GNU GPL, version 2;
+# see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+*/
 
 #ifndef _USB_H_
 #define _USB_H_
