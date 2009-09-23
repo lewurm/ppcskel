@@ -35,10 +35,11 @@ static struct general_td *allocate_general_td();
 static void dbg_op_state(u32 reg);
 static void configure_ports(u8 from_init, u32 reg);
 static void setup_port(u32 ohci, u32 reg, u8 from_init);
+static void set_target_hcca(u32 reg);
 
 static struct ohci_hcca hcca_oh0;
 static struct ohci_hcca hcca_oh1;
-
+struct ohci_hcca *hcca;
 
 static struct general_td *allocate_general_td()
 {
@@ -281,13 +282,9 @@ void hcdi_fire(u32 reg)
 		free(prev);
 	}
 
-	if(reg == OHCI0_REG_BASE) {
-		hcca_oh0.done_head = 0;
-		sync_after_write(&hcca_oh0, sizeof(hcca_oh0));
-	} else if (reg == OHCI1_REG_BASE) {
-		hcca_oh1.done_head = 0;
-		sync_after_write(&hcca_oh1, sizeof(hcca_oh1));
-	}
+	set_target_hcca(reg);
+	hcca->done_head = 0;
+	sync_after_write(hcca, sizeof(*hcca));
 
 out:
 	write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_CLE);
@@ -403,13 +400,9 @@ void hcdi_init(u32 reg)
 	write32(reg+OHCI_HC_BULK_HEAD_ED, 0);
 
 	/* set hcca adress */
-	if(reg == OHCI0_REG_BASE) {
-		sync_after_write(&hcca_oh0, 256);
-		write32(reg+OHCI_HC_HCCA, virt_to_phys(&hcca_oh0));
-	} else {
-		sync_after_write(&hcca_oh1, 256);
-		write32(reg+OHCI_HC_HCCA, virt_to_phys(&hcca_oh1));
-	}
+	set_target_hcca(reg);
+	sync_after_write(hcca, 256);
+	write32(reg+OHCI_HC_HCCA, virt_to_phys(hcca));
 
 	/* set periodicstart */
 #define FIT (1<<31)
@@ -558,13 +551,18 @@ void hcdi_irq(u32 reg)
 	}
 }
 
+/* Before you access the HCCA structure in any way, call this to set the pointer correctly! */
+static void set_target_hcca(u32 reg)
+{
+	switch(reg) {
+	case OHCI0_REG_BASE: hcca = &hcca_oh0; break;
+	case OHCI1_REG_BASE: hcca = &hcca_oh1; break;
+	}
+}
+
 void show_frame_no(u32 reg)
 {
-	if(reg == OHCI0_REG_BASE) {
-		sync_before_read(&hcca_oh0, 256);
-		printf("***** frame_no: %d *****\n", LE(hcca_oh0.frame_no));
-	} else if (reg == OHCI1_REG_BASE) {
-		sync_before_read(&hcca_oh1, 256);
-		printf("***** frame_no: %d *****\n", LE(hcca_oh1.frame_no));
-	}
+	set_target_hcca(reg);
+	sync_before_read(hcca, 256);
+	printf("***** frame_no: %d *****\n", LE(hcca->frame_no));
 }
