@@ -81,8 +81,8 @@ s8 usb_bulk_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
 
 
 /******************* Interrupt Transfer **********************/
-s8 usb_u8errupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
-s8 usb_u8errupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_interrupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
+s8 usb_interrupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout);
 
 
 /******************* Isochron Transfer **********************/

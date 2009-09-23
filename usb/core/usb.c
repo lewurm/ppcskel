@@ -101,7 +101,6 @@ s8 usb_reset(struct usb_device *dev)
 
 
 /******************* Control Transfer **********************/
-
 /**
  * Create a control transfer.
  */
@@ -293,6 +292,7 @@ s8 usb_set_address(struct usb_device *dev, u8 address)
 {
 	cleargbuf();
 	usb_control_msg(dev, 0x00, SET_ADDRESS, address, 0, 0, gbuf, 0);
+	wait_ms(210);
 	return 0;
 }
 
@@ -302,7 +302,7 @@ u8 usb_get_configuration(struct usb_device *dev)
 	cleargbuf();
 	usb_control_msg(dev, 0x80, GET_CONFIGURATION, 0, 0, 4, gbuf, 0);
 	printf("=============\nafter usb_get_configuration:\n");
-	hexdump((void*) gbuf, 1);
+	hexdump((void*) gbuf, 8);
 	return gbuf[0];
 }
 
@@ -310,6 +310,7 @@ s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
 	cleargbuf();
 	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration, 0, 0, gbuf, 0);
+	wait_ms(50);
 	return 0;
 }
 
@@ -322,7 +323,6 @@ s8 usb_set_altinterface(struct usb_device *dev, u8 alternate)
 
 
 /******************* Bulk Transfer **********************/
-
 /**
  * Write to an a bulk endpoint.
  */
@@ -376,7 +376,6 @@ s8 usb_bulk_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
  */
 s8 usb_interrupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-
 	return 0;
 }
 
@@ -385,6 +384,19 @@ s8 usb_interrupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeo
  */
 s8 usb_interrupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
+	struct usb_irp *irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
+	irp->dev = dev;
+	irp->endpoint = ep | 0x80; //from device to host
+	irp->epsize = dev->epSize[ep]; // ermitteln
+	irp->type = USB_INTR;
+
+	irp->buffer = buf;
+	irp->len = size;
+	irp->timeout = timeout;
+
+	printf("interupt_read\n");
+	usb_submit_irp(irp);
+	free(irp);
 
 	return 0;
 }

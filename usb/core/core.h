@@ -167,6 +167,7 @@ struct usb_transfer_descriptor {
 	u8 devaddress;
 	u8 endpoint;
 	u8 fullspeed;
+	u8 type;
 	
 	// TODO: zusammenfassen!
 	u8 pid;

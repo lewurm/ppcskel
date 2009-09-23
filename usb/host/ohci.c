@@ -116,11 +116,7 @@ static void general_td_fill(struct general_td *dest, const struct usb_transfer_d
 			dest->flags |= LE(OHCI_TD_DIRECTION_PID_OUT);
 			dest->flags |= LE(OHCI_TD_BUFFER_ROUNDING);
 
-			/*
-			 * TODO: just temporary solution! (consider it with len?)
-			 * there can be also regular PID_OUT pakets
-			 */
-			dest->flags |= LE(OHCI_TD_TOGGLE_1);
+			dest->flags |= src->togl ? LE(OHCI_TD_TOGGLE_1) : LE(OHCI_TD_TOGGLE_0);
 			break;
 		case USB_PID_IN:
 #ifdef _DU_OHCI_Q
@@ -133,12 +129,7 @@ static void general_td_fill(struct general_td *dest, const struct usb_transfer_d
 				printf("round buffer!\n");
 #endif
 			}
-			/*
-			 * let the endpoint do the togglestuff!
-			 * TODO: just temporary solution!
-			 * there can be also inregular PID_IN pakets (@Status Stage)
-			 */
-			dest->flags |= LE(OHCI_TD_TOGGLE_CARRY);
+			dest->flags |= src->togl ? LE(OHCI_TD_TOGGLE_1) : LE(OHCI_TD_TOGGLE_0);
 			break;
 	}
 	dest->flags |= LE(OHCI_TD_SET_DELAY_INTERRUPT(7));
@@ -200,10 +191,10 @@ void hcdi_fire(u32 reg)
 	/* poll until edhead->headp is null */
 	do {
 		sync_before_read(edhead, sizeof(struct endpoint_descriptor));
-#ifdef _DU_OHCI_F
+//#ifdef _DU_OHCI_F
 		printf("edhead->headp: 0x%08X\n", LE(edhead->headp));
+//#endif
 		udelay(10000);
-#endif
 
 		/* if halted, debug output plz. will break the transfer */
 		if((LE(edhead->headp) & OHCI_ENDPOINT_HALTED)) {
@@ -243,7 +234,7 @@ void hcdi_fire(u32 reg)
 			dbg_td_flag(LE(prev->flags));
 			printf("halted end!\n");
 #endif
-			return;
+			goto out;
 		}
 		prev = (struct general_td*) (LE(edhead->headp)&~0xf);
 	} while(LE(edhead->headp)&~0xf);
@@ -299,6 +290,7 @@ void hcdi_fire(u32 reg)
 		sync_after_write(&hcca_oh1, sizeof(hcca_oh1));
 	}
 
+out:
 	write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_CLE);
 
 	edhead = 0;

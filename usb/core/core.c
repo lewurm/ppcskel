@@ -160,23 +160,47 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	/* print device info */
 	lsusb(dev);
 
+
+#if 1
 	/* select configuration */
-	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
+	ret = usb_set_configuration(dev, 1);
 	printf("=============\nusb_set_configuration(ret: %d): %d\n", ret, dev->conf->bConfigurationValue);
-	printf("=============\nusb_get_configuration: %d\n", usb_get_configuration(dev));
+	printf("=============\nusb_get_configuration: %d (should be 1 here)\n", usb_get_configuration(dev));
+#endif
 
-#if 0
+
 	u8 buf[8];
+#if 1
+	/* select interface */
 	memset(buf, 0, 8);
-	usb_control_msg(dev, 0x00, SET_INTERFACE, 0, dev->conf->intf->bInterfaceNumber, 0, buf, 0);
-	printf("=============\nusb_set_interface: %d\n", dev->conf->intf->bInterfaceNumber);
+	printf("interfacenumber: %d\n", dev->conf->intf->bInterfaceNumber);
+	usb_control_msg(dev, 0x01, SET_INTERFACE, 0, 0, 0, buf, 0);
+	printf("=============\nusb_set_interface: %d\n", 0);
 	hexdump((void*)buf, 8);
-
+#if 0
 	memset(buf, 0, 8);
-	usb_control_msg(dev, 0x81, GET_INTERFACE, 0, dev->conf->intf->bInterfaceNumber, 8, buf, 0);
+	usb_control_msg(dev, 0x81, GET_INTERFACE, 0, 0, 4, buf, 0);
 	printf("=============\nusb_get_interface: %d\n", buf[0]);
 	hexdump((void*)buf, 8);
 #endif
+#endif
+
+	/* I just don't know why on some devices 
+	 * {s,g}et_{configuration,interface} won't work.
+	 * may the setter works and getter are poorly implemented?
+	 * however, I try here some interrupt inputs, assuming 
+	 * the setters are fine*/
+
+	memset(buf, 0, 8);
+	s8 epnum = dev->conf->intf->endp->bEndpointAddress & 0xf;
+	printf("epnum: 0x%04X\n", epnum);
+	u8 muh = 10;
+	while(muh--) {
+		(void) usb_interrupt_read(dev, epnum, buf, 8, 0);
+		printf("============\nusb_interrupt_read:\n");
+		hexdump((void*)buf, 8);
+		udelay(2000000);
+	}
 
 #if 0
 	/* add device to device list */
@@ -195,10 +219,11 @@ void lsusb(struct usb_device *dev)
 	printf("=== Device Descriptor === \n");
 	printf("bLength 0x%02X\n", dev->bLength);
 	printf("bDescriptorType 0x%02X\n", dev->bDeviceClass);
-	printf("bcdUSB 0x%02X\n", dev->bcdUSB);
+	printf("bcdUSB 0x%04X\n", dev->bcdUSB);
 	printf("bDeviceClass 0x%02X\n", dev->bDeviceClass);
 	printf("bDeviceSubClass 0x%02X\n", dev->bDeviceSubClass);
 	printf("bDeviceProtocoll 0x%02X\n", dev->bDeviceProtocoll);
+	printf("bMaxPacketSize 0x%02X\n", dev->bMaxPacketSize0);
 	printf("idVendor 0x%04X\n", dev->idVendor);
 	printf("idProduct 0x%04X\n", dev->idProduct);
 	printf("bcdDevice 0x%04X\n", dev->bcdDevice);
@@ -451,14 +476,12 @@ u16 usb_submit_irp(struct usb_irp *irp)
 		break;
 
 	case USB_BULK:
-		core.stdout("bulk\r\n");
 		//u8 runloop=1;
 		//u16 restlength = irp->len;
 		//char * td_buf_ptr=irp->buffer;
 
 		/* schleife die die tds generiert */
 		while (runloop) {
-
 			td = usb_create_transfer_descriptor(irp);
 			td->endpoint = td->endpoint & 0x7F;				/* clear direction bit */
 
@@ -483,10 +506,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 			td_buf_ptr = td_buf_ptr + irp->epsize;
 
 			td->togl = togl;
-			if (togl == 0)
-				togl = 1;
-			else
-				togl = 0;
+			togl = togl ? 0 : 1;
 				/**** send token ****/
 			hcdi_enqueue(td, irp->dev->ohci);
 			free(td);
@@ -498,6 +518,41 @@ u16 usb_submit_irp(struct usb_irp *irp)
 		irp->dev->epTogl[(irp->endpoint & 0x7F)] = togl;
 
 		break;
+	
+	case USB_INTR:
+		//u8 runloop=1;
+		//u16 restlength = irp->len;
+		//char * td_buf_ptr=irp->buffer;
+
+		/* schleife die die tds generiert */
+		while (runloop && (restlength > 0)) {
+			td = usb_create_transfer_descriptor(irp);
+			/* max packet size for given endpoint */
+			td->actlen = irp->epsize;
+
+			td->pid = USB_PID_IN;
+			/* TODO: USB_PID_OUT */
+
+			/* stop loop if all bytes are send */
+			if (restlength < irp->epsize) {
+				runloop = 0;
+				td->actlen = restlength;
+			}
+
+			td->buffer = td_buf_ptr;
+			/* move pointer for next packet */
+			td_buf_ptr += irp->epsize;
+
+			td->togl = togl;
+			togl = togl ? 0 : 1;
+				
+				/**** send token ****/
+			hcdi_enqueue(td, irp->dev->ohci);
+			restlength = restlength - irp->epsize;
+			free(td);
+		}
+		break;
+		irp->dev->epTogl[(irp->endpoint & 0x7F)] = togl;
 	}
 	hcdi_fire(irp->dev->ohci);
 
@@ -520,6 +575,7 @@ struct usb_transfer_descriptor *usb_create_transfer_descriptor(struct usb_irp * 
 	td->state = USB_TRANSFER_DESCR_NONE;
 	td->maxp = irp->epsize;
 	td->fullspeed = irp->dev->fullspeed;
+	td->type = irp->type;
 
 	return td;
 }
