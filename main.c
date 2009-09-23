@@ -27,6 +27,7 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "irq.h"
 #include "usb/core/core.h"
 #include "usb/drivers/class/hid.h"
+#include "sha1.h"
 #include "hollywood.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
@@ -161,6 +162,14 @@ int main(void)
 			x += 13;
 		}
 	}
+
+#if 0
+	printf("===============================\n");
+
+	SHA1TestCases();
+
+	printf("bye, world!\n");
+#endif
 
 	return 0;
 }

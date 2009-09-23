@@ -174,7 +174,6 @@ Copyright (C) 2008, 2009	John Kelley <wiidev@kelley.ca>
 #define 	OHCI_HC_RH_PORT_STATUS_1 	0x54
 #define 	OHCI_HC_RH_PORT_STATUS_2 	0x58
 
-
 /* EHCI Registers */
 #define 	EHCI_REG_BASE 		0xd040000
 
