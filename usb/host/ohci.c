@@ -314,8 +314,12 @@ u8 hcdi_enqueue(const struct usb_transfer_descriptor *td) {
 		memset(edhead, 0, sizeof(struct endpoint_descriptor));
 		edhead->flags = LE(OHCI_ENDPOINT_GENERAL_FORMAT);
 		edhead->headp = edhead->tailp = edhead->nexted = LE(0);
-		edhead->flags |= LE(OHCI_ENDPOINT_LOW_SPEED |
-				OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) |
+		if(td->fullspeed) {
+			edhead->flags |= LE(OHCI_ENDPOINT_FULL_SPEED);
+		} else {
+			edhead->flags |= LE(OHCI_ENDPOINT_LOW_SPEED);
+		}
+		edhead->flags |= LE(OHCI_ENDPOINT_SET_DEVICE_ADDRESS(td->devaddress) |
 				OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
 				OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
 		edhead->tdcount = 0;
@@ -479,7 +483,8 @@ static void setup_port(u32 reg, u8 from_init)
 		printf("loop done\n");
 #endif
 
-		(void) usb_add_device();
+		/* returns usb_device struct */
+		(void) usb_add_device((read32(reg) & RH_PS_LSDA) >> 8);
 	}
 }
 

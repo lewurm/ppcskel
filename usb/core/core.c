@@ -86,13 +86,16 @@ void usb_periodic()
  * for the core. usb_add_device expected that
  * the device answers to address zero.
  */
-struct usb_device *usb_add_device()
+struct usb_device *usb_add_device(u8 lowspeed)
 {
 	struct usb_device *dev = (struct usb_device *) malloc(sizeof(struct usb_device));
 	dev->conf = (struct usb_conf *) malloc(sizeof(struct usb_conf));
 	dev->address = 0;
-	/* send at first time only 8 bytes */
-	dev->bMaxPacketSize0 = 8;
+	dev->fullspeed = lowspeed ? 0 : 1;
+	/* send at first time only 8 bytes for lowspeed devices
+	 * 64 bytes for fullspeed
+	 */
+	dev->bMaxPacketSize0 = lowspeed ? 8 : 64;
 
 	dev->epSize[0] = 64;
 	dev->epSize[1] = 64;
@@ -156,10 +159,12 @@ struct usb_device *usb_add_device()
 	/* print device info */
 	lsusb(dev);
 
+#if 0
 	/* select configuration */
 	ret = usb_set_configuration(dev, dev->conf->bConfigurationValue);
 	printf("=============\nusb_set_configuration(ret: %d) %d\n", ret, dev->conf->bConfigurationValue);
 	printf("=============\nusb_get_configuration: %d\n", usb_get_configuration(dev));
+#endif
 
 #if 0
 	u8 buf[8];
@@ -202,7 +207,7 @@ void lsusb(struct usb_device *dev)
 	printf("iProduct(0x%02X): \"%s\"\n", dev->iProduct, dev->iProduct ? usb_get_string_simple(dev, dev->iProduct) : "no String");
 	printf("iSerialNumber(0x%02X): \"%s\"\n", dev->iSerialNumber, dev->iSerialNumber ? usb_get_string_simple(dev, dev->iSerialNumber) : "no String");
 	printf("bNumConfigurations 0x%02X\n", dev->bNumConfigurations);
-	
+
 	u8 c, i, e;
 	struct usb_conf *conf = dev->conf;
 	for(c=0; c <= dev->bNumConfigurations; c++) {
@@ -241,7 +246,7 @@ void lsusb(struct usb_device *dev)
 
 				ed = ed->next;
 			} //endpoint
-			
+
 			ifs = ifs->next;
 		} //interface
 
@@ -515,6 +520,7 @@ struct usb_transfer_descriptor *usb_create_transfer_descriptor(struct usb_irp * 
 	td->iso = 0;
 	td->state = USB_TRANSFER_DESCR_NONE;
 	td->maxp = irp->epsize;
+	td->fullspeed = irp->dev->fullspeed;
 
 	return td;
 }

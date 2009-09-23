@@ -165,6 +165,7 @@ struct usb_irp {
 struct usb_transfer_descriptor {
 	u8 devaddress;
 	u8 endpoint;
+	u8 fullspeed;
 	
 	// TODO: zusammenfassen!
 	u8 pid;
@@ -192,7 +193,7 @@ void usb_periodic();
 u8 usb_next_address();
 
 
-struct usb_device *usb_add_device();
+struct usb_device *usb_add_device(u8 lowspeed);
 u8 usb_remove_device(struct usb_device *dev);
 u8 usb_register_driver(struct usb_driver *driver);
 void usb_probe_driver();

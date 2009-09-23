@@ -111,7 +111,7 @@ s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request,
 	struct usb_irp *irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
 	irp->dev = dev;
 	irp->endpoint = 0;
-	
+
 	irp->epsize = dev->bMaxPacketSize0;
 	irp->type = USB_CTRL;
 
