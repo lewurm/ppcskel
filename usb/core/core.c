@@ -98,7 +98,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	dev->bMaxPacketSize0 = lowspeed ? 8 : 64;
 	dev->ohci = reg;
 
-	dev->epSize[0] = 64;
+	dev->epSize[0] = 8;
 	dev->epSize[1] = 64;
 	dev->epSize[2] = 64;
 
@@ -112,31 +112,8 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 	}
 
-//#define WTF
+#define WTF
 #ifdef WTF
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADING WTF :O lolololololo \n");
-	printf("loolololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDNG WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDINGWTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :Ololololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O llololololo \n");
-	printf("lololololool PADDING WTF :O loololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O loloooloo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololoolo \n");
-	printf("lololololool PADDING WTF :O lololooolo \n");
-	printf("lololololool PADDING WTF :O loloolololo \n");
 	printf("lololol PADDING WTF :O lolololololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lolololool PADDING WTF :O lololoololo \n");
@@ -144,16 +121,6 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	printf("lolololool PADDING WTF :O lolololololo \n");
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lollllool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O loloolololo \n");
-	printf("lololololool PADDING WTF lololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
-	printf("lololololool PADDING WTF :O lolololololo \n");
 #endif
 	u8 address = usb_next_address();
 	ret = usb_set_address(dev, address);
@@ -166,7 +133,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 
 	/* print device info */
-	lsusb(dev);
+	//lsusb(dev);
 
 	//HID only!
 #define GET_PROTOCOL 0x03
@@ -182,32 +149,36 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	ret = usb_set_configuration(dev, 1);
 	printf("=============\nusb_set_configuration(ret: %d): %d\n", ret, dev->conf->bConfigurationValue);
 	wait_ms(500);
+#if 0
+	wait_ms(500);
 	printf("=============\nusb_get_configuration: %d (should be 1 here)\n", usb_get_configuration(dev));
 #endif
-
-#if 0
-	memset(buf, 0, 0xff);
-	usb_control_msg(dev, 0x81, GET_DESCRIPTOR, 0x2200, 0x0, 0x41, buf, 0);
-	printf("wtf request\n");
-	hexdump((void*)buf, 0x41);
 #endif
+
+#if 1
+	memset(buf, 0, 0xff);
+	usb_control_msg(dev, (1<<5)|1, SET_CONFIGURATION, 0x200, 0x0, 0x0, buf, 0);
+	printf("wtf request\n");
+	hexdump((void*)buf, 0x8);
+#endif
+
 
 #if 0
 	/* set protocol */
 	/* see p48 in HID spec */
 	memset(buf, 0, 8);
-	usb_control_msg(dev, SETit, SET_PROTOCOL, 0, 0, 0, buf, 0);
+	usb_control_msg(dev, SETit, SET_PROTOCOL, 0 /*boot protocol*/, 0 /*interface number*/, 0 /*length*/, buf, 0);
 	printf("=============\nhid_set_protocol %d\n", 0);
 	hexdump((void*)buf, 8);
 #endif
 #if 0
 	memset(buf, 0, 8);
 	usb_control_msg(dev, GETit, GET_PROTOCOL, 0, 0, 4, buf, 0);
-	printf("=============\nusb_get_interface: %d\n", buf[0]);
+	printf("=============\nusb_get_protocol: %d\n", buf[0]);
 	hexdump((void*)buf, 8);
 #endif
 
-#if 0
+#if 1
 	/* I just don't know why on some devices 
 	 * {s,g}et_{configuration,interface} won't work.
 	 * may the setter works and getter are poorly implemented?
@@ -570,7 +541,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 			td->togl = togl;
 			togl = togl ? 0 : 1;
 				
-				/**** send token ****/
+			/**** send token ****/
 			hcdi_enqueue(td, irp->dev->ohci);
 			restlength = restlength - irp->epsize;
 			free(td);

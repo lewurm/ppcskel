@@ -310,7 +310,7 @@ u8 usb_get_configuration(struct usb_device *dev)
 s8 usb_set_configuration(struct usb_device *dev, u8 configuration)
 {
 	cleargbuf();
-	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration<<8, 0, 0, gbuf, 0);
+	usb_control_msg(dev, 0x00, SET_CONFIGURATION, configuration, 0, 0, gbuf, 0);
 	printf("=============\nafter usb_set_configuration:\n");
 	hexdump((void*) gbuf, 8);
 	wait_ms(20);
@@ -389,7 +389,7 @@ s8 usb_interrupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeou
 {
 	struct usb_irp *irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
 	irp->dev = dev;
-	irp->endpoint = ep | 0x80; //from device to host
+	irp->endpoint = ep; //wtf? |80; //from device to host
 	irp->epsize = dev->epSize[ep]; // ermitteln
 	irp->type = USB_INTR;
 
