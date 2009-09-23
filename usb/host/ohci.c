@@ -32,11 +32,12 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 			   (((dword) & 0x000000FF) << 24) )
 
 static struct general_td *allocate_general_td();
-static void dbg_op_state();
-static void configure_ports(u8 from_init);
-static void setup_port(u32 reg, u8 from_init);
+static void dbg_op_state(u32 reg);
+static void configure_ports(u8 from_init, u32 reg);
+static void setup_port(u32 ohci, u32 reg, u8 from_init);
 
 static struct ohci_hcca hcca_oh0;
+static struct ohci_hcca hcca_oh1;
 
 
 static struct general_td *allocate_general_td()
@@ -51,9 +52,9 @@ static struct general_td *allocate_general_td()
 }
 
 
-static void dbg_op_state() 
+static void dbg_op_state(u32 reg) 
 {
-	switch (read32(OHCI0_HC_CONTROL) & OHCI_CTRL_HCFS) {
+	switch (read32(reg+OHCI_HC_CONTROL) & OHCI_CTRL_HCFS) {
 		case OHCI_USB_SUSPEND:
 			printf("ohci-- OHCI_USB_SUSPEND\n");
 			break;
@@ -153,7 +154,7 @@ static void dump_address(void *addr, u32 size, const char* str)
 
 static struct endpoint_descriptor _edhead;
 struct endpoint_descriptor *edhead = 0;
-void hcdi_fire()
+void hcdi_fire(u32 reg)
 {
 #ifdef _DU_OHCI_F
 	printf("<^>  <^>  <^> hcdi_fire(start)\n");
@@ -167,7 +168,7 @@ void hcdi_fire()
 	udelay(11000);
 #endif
 
-	write32(OHCI0_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
+	write32(reg+OHCI_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
 
 	/* sync it all */
 	sync_after_write(edhead, sizeof(struct endpoint_descriptor));
@@ -192,8 +193,8 @@ void hcdi_fire()
 	}
 
 	/* trigger control list */
-	set32(OHCI0_HC_CONTROL, OHCI_CTRL_CLE);
-	write32(OHCI0_HC_COMMAND_STATUS, OHCI_CLF);
+	set32(reg+OHCI_HC_CONTROL, OHCI_CTRL_CLE);
+	write32(reg+OHCI_HC_COMMAND_STATUS, OHCI_CLF);
 
 	struct general_td *n=0, *prev = 0, *next = 0;
 	/* poll until edhead->headp is null */
@@ -247,9 +248,9 @@ void hcdi_fire()
 		prev = (struct general_td*) (LE(edhead->headp)&~0xf);
 	} while(LE(edhead->headp)&~0xf);
 
-	n = phys_to_virt(read32(OHCI0_HC_DONE_HEAD) & ~1);
+	n = phys_to_virt(read32(reg+OHCI_HC_DONE_HEAD) & ~1);
 #ifdef _DU_OHCI_F
-	printf("hc_done_head: 0x%08X\n", read32(OHCI0_HC_DONE_HEAD));
+	printf("hc_done_head: 0x%08X\n", read32(reg+OHCI_HC_DONE_HEAD));
 #endif
 
 	prev = 0; next = 0;
@@ -290,10 +291,15 @@ void hcdi_fire()
 		free(prev);
 	}
 
-	hcca_oh0.done_head = 0;
-	sync_after_write(&hcca_oh0, sizeof(hcca_oh0));
+	if(reg == OHCI0_REG_BASE) {
+		hcca_oh0.done_head = 0;
+		sync_after_write(&hcca_oh0, sizeof(hcca_oh0));
+	} else if (reg == OHCI1_REG_BASE) {
+		hcca_oh1.done_head = 0;
+		sync_after_write(&hcca_oh1, sizeof(hcca_oh1));
+	}
 
-	write32(OHCI0_HC_CONTROL, read32(OHCI0_HC_CONTROL)&~OHCI_CTRL_CLE);
+	write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_CLE);
 
 	edhead = 0;
 
@@ -305,7 +311,7 @@ void hcdi_fire()
 /**
  * Enqueue a transfer descriptor.
  */
-u8 hcdi_enqueue(const struct usb_transfer_descriptor *td) {
+u8 hcdi_enqueue(const struct usb_transfer_descriptor *td, u32 reg) {
 #ifdef _DU_OHCI_Q
 	printf("*()*()*()*()*()*()*() hcdi_enqueue(start)\n");
 #endif
@@ -358,22 +364,22 @@ u8 hcdi_enqueue(const struct usb_transfer_descriptor *td) {
 /**
  * Remove an transfer descriptor from transfer queue.
  */
-u8 hcdi_dequeue(struct usb_transfer_descriptor *td) {
+u8 hcdi_dequeue(struct usb_transfer_descriptor *td, u32 reg) {
 	return 0;
 }
 
-void hcdi_init() 
+void hcdi_init(u32 reg)
 {
 	printf("ohci-- init\n");
-	dbg_op_state();
+	dbg_op_state(reg);
 
 	/* disable hc interrupts */
-	set32(OHCI0_HC_INT_DISABLE, OHCI_INTR_MIE);
+	set32(reg+OHCI_HC_INT_DISABLE, OHCI_INTR_MIE);
 
 	/* save fmInterval and calculate FSMPS */
 #define FSMP(fi) (0x7fff & ((6 * ((fi) - 210)) / 7))
 #define FI 0x2edf /* 12000 bits per frame (-1) */
-	u32 fmint = read32(OHCI0_HC_FM_INTERVAL) & 0x3fff;
+	u32 fmint = read32(reg+OHCI_HC_FM_INTERVAL) & 0x3fff;
 	if(fmint != FI)
 		printf("ohci-- fminterval delta: %d\n", fmint - FI);
 	fmint |= FSMP (fmint) << 16;
@@ -382,11 +388,11 @@ void hcdi_init()
 	set32(EHCI_CTL, EHCI_CTL_OH0INTE | EHCI_CTL_OH1INTE | 0xe0000);
 
 	/* reset HC */
-	write32(OHCI0_HC_COMMAND_STATUS, OHCI_HCR);
+	write32(reg+OHCI_HC_COMMAND_STATUS, OHCI_HCR);
 
 	/* wait max. 30us */
 	u32 ts = 30;
-	while ((read32(OHCI0_HC_COMMAND_STATUS) & OHCI_HCR) != 0) {
+	while ((read32(reg+OHCI_HC_COMMAND_STATUS) & OHCI_HCR) != 0) {
 		 if(--ts == 0) {
 			printf("ohci-- FAILED");
 			return;
@@ -402,63 +408,69 @@ void hcdi_init()
 
 	/* Tell the controller where the control and bulk lists are
 	 * The lists are empty now. */
-	write32(OHCI0_HC_CTRL_HEAD_ED, 0);
-	write32(OHCI0_HC_BULK_HEAD_ED, 0);
+	write32(reg+OHCI_HC_CTRL_HEAD_ED, 0);
+	write32(reg+OHCI_HC_BULK_HEAD_ED, 0);
 
 	/* set hcca adress */
-	sync_after_write(&hcca_oh0, 256);
-	write32(OHCI0_HC_HCCA, virt_to_phys(&hcca_oh0));
+	if(reg == OHCI0_REG_BASE) {
+		sync_after_write(&hcca_oh0, 256);
+		write32(reg+OHCI_HC_HCCA, virt_to_phys(&hcca_oh0));
+	} else {
+		sync_after_write(&hcca_oh1, 256);
+		write32(reg+OHCI_HC_HCCA, virt_to_phys(&hcca_oh1));
+	}
 
 	/* set periodicstart */
 #define FIT (1<<31)
-	u32 fmInterval = read32(OHCI0_HC_FM_INTERVAL) &0x3fff;
-	u32 fit = read32(OHCI0_HC_FM_INTERVAL) & FIT;
+	u32 fmInterval = read32(reg+OHCI_HC_FM_INTERVAL) &0x3fff;
+	u32 fit = read32(reg+OHCI_HC_FM_INTERVAL) & FIT;
 
-	write32(OHCI0_HC_FM_INTERVAL, fmint | (fit ^ FIT));
-	write32(OHCI0_HC_PERIODIC_START, ((9*fmInterval)/10)&0x3fff);
+	write32(reg+OHCI_HC_FM_INTERVAL, fmint | (fit ^ FIT));
+	write32(reg+OHCI_HC_PERIODIC_START, ((9*fmInterval)/10)&0x3fff);
 
 	/* testing bla */
-	if ((read32(OHCI0_HC_FM_INTERVAL) & 0x3fff0000) == 0 || !read32(OHCI0_HC_PERIODIC_START)) {
+	if ((read32(reg+OHCI_HC_FM_INTERVAL) & 0x3fff0000) == 0 || !read32(reg+OHCI_HC_PERIODIC_START)) {
 		printf("ohci-- w00t, fail!! see ohci-hcd.c:669\n");
 	}
 	
 	/* start HC operations */
-	write32(OHCI0_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
+	write32(reg+OHCI_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
 
 	/* wake on ConnectStatusChange, matching external hubs */
-	write32(OHCI0_HC_RH_STATUS, /*RH_HS_DRWE |*/ RH_HS_LPSC);
+	write32(reg+OHCI_HC_RH_STATUS, /*RH_HS_DRWE |*/ RH_HS_LPSC);
 
 	/* Choose the interrupts we care about now, others later on demand */
-	write32(OHCI0_HC_INT_STATUS, ~0);
-	write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_INIT);
+	write32(reg+OHCI_HC_INT_STATUS, ~0);
+	write32(reg+OHCI_HC_INT_ENABLE, OHCI_INTR_INIT);
 
 	//wtf?
-	wait_ms ((read32(OHCI0_HC_RH_DESCRIPTOR_A) >> 23) & 0x1fe);
+	wait_ms ((read32(reg+OHCI_HC_RH_DESCRIPTOR_A) >> 23) & 0x1fe);
 
-	configure_ports((u8)1);
+	configure_ports((u8)1, reg);
 	irq_restore(cookie);
 
-	dbg_op_state();
+	dbg_op_state(reg);
 }
 
-static void configure_ports(u8 from_init)
+static void configure_ports(u8 from_init, u32 reg)
 {
 #ifdef _DU_OHCI_RH
-	printf("OHCI0_HC_RH_DESCRIPTOR_A:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_A));
-	printf("OHCI0_HC_RH_DESCRIPTOR_B:\t0x%08X\n", read32(OHCI0_HC_RH_DESCRIPTOR_B));
-	printf("OHCI0_HC_RH_STATUS:\t\t0x%08X\n", read32(OHCI0_HC_RH_STATUS));
-	printf("OHCI0_HC_RH_PORT_STATUS_1:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_1));
-	printf("OHCI0_HC_RH_PORT_STATUS_2:\t0x%08X\n", read32(OHCI0_HC_RH_PORT_STATUS_2));
+	printf("=== Roothub @ %s ===\n", reg == OHCI0_REG_BASE ? "OHCI0" : "OHCI1");
+	printf("OHCI_HC_RH_DESCRIPTOR_A:\t0x%08X\n", read32(reg+OHCI_HC_RH_DESCRIPTOR_A));
+	printf("OHCI_HC_RH_DESCRIPTOR_B:\t0x%08X\n", read32(reg+OHCI_HC_RH_DESCRIPTOR_B));
+	printf("OHCI_HC_RH_STATUS:\t\t0x%08X\n", read32(reg+OHCI_HC_RH_STATUS));
+	printf("OHCI_HC_RH_PORT_STATUS_1:\t0x%08X\n", read32(reg+OHCI_HC_RH_PORT_STATUS_1));
+	printf("OHCI_HC_RH_PORT_STATUS_2:\t0x%08X\n", read32(reg+OHCI_HC_RH_PORT_STATUS_2));
 #endif
 
-	setup_port(OHCI0_HC_RH_PORT_STATUS_1, from_init);
-	setup_port(OHCI0_HC_RH_PORT_STATUS_2, from_init);
+	setup_port(reg, reg+OHCI_HC_RH_PORT_STATUS_1, from_init);
+	setup_port(reg, reg+OHCI_HC_RH_PORT_STATUS_2, from_init);
 #ifdef _DU_OHCI_RH
 	printf("configure_ports done\n");
 #endif
 }
 
-static void setup_port(u32 reg, u8 from_init)
+static void setup_port(u32 ohci, u32 reg, u8 from_init)
 {
 	u32 port = read32(reg);
 	if((port & RH_PS_CCS) && ((port & RH_PS_CSC) || from_init)) {
@@ -484,14 +496,14 @@ static void setup_port(u32 reg, u8 from_init)
 #endif
 
 		/* returns usb_device struct */
-		(void) usb_add_device((read32(reg) & RH_PS_LSDA) >> 8);
+		(void) usb_add_device((read32(reg) & RH_PS_LSDA) >> 8, ohci);
 	}
 }
 
-void hcdi_irq()
+void hcdi_irq(u32 reg)
 {
 	/* read interrupt status */
-	u32 flags = read32(OHCI0_HC_INT_STATUS);
+	u32 flags = read32(reg+OHCI_HC_INT_STATUS);
 
 	/* when all bits are set to 1 some problem occured */
 	if (flags == 0xffffffff) {
@@ -500,7 +512,7 @@ void hcdi_irq()
 	}
 
 	/* only care about interrupts that are enabled */
-	flags &= read32(OHCI0_HC_INT_ENABLE);
+	flags &= read32(reg+OHCI_HC_INT_ENABLE);
 
 	/* nothing to do? */
 	if (flags == 0) {
@@ -520,13 +532,13 @@ void hcdi_irq()
 	if (flags & OHCI_INTR_RHSC) {
 		printf("RootHubStatusChange\n");
 		/* TODO: set some next_statechange variable... */
-		configure_ports(0);
-		write32(OHCI0_HC_INT_STATUS, OHCI_INTR_RD | OHCI_INTR_RHSC);
+		configure_ports(0, reg);
+		write32(reg+OHCI_HC_INT_STATUS, OHCI_INTR_RD | OHCI_INTR_RHSC);
 	}
 	/* ResumeDetected */
 	else if (flags & OHCI_INTR_RD) {
 		printf("ResumeDetected\n");
-		write32(OHCI0_HC_INT_STATUS, OHCI_INTR_RD);
+		write32(reg+OHCI_HC_INT_STATUS, OHCI_INTR_RD);
 		/* TODO: figure out what the linux kernel does here... */
 	}
 
@@ -550,13 +562,18 @@ void hcdi_irq()
 
 #define HC_IS_RUNNING() 1 /* dirty, i know... just a temporary solution */
 	if (HC_IS_RUNNING()) {
-		write32(OHCI0_HC_INT_STATUS, flags);
-		write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_MIE);
+		write32(reg+OHCI_HC_INT_STATUS, flags);
+		write32(reg+OHCI_HC_INT_ENABLE, OHCI_INTR_MIE);
 	}
 }
 
-void show_frame_no()
+void show_frame_no(u32 reg)
 {
-	sync_before_read(&hcca_oh0, 256);
-	printf("***** frame_no: %d *****\n", LE(hcca_oh0.frame_no));
+	if(reg == OHCI0_REG_BASE) {
+		sync_before_read(&hcca_oh0, 256);
+		printf("***** frame_no: %d *****\n", LE(hcca_oh0.frame_no));
+	} else if (reg == OHCI1_REG_BASE) {
+		sync_before_read(&hcca_oh1, 256);
+		printf("***** frame_no: %d *****\n", LE(hcca_oh1.frame_no));
+	}
 }

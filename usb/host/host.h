@@ -40,7 +40,7 @@
 /**
  * IRQ from host controller.
  */
-void hcdi_irq();
+void hcdi_irq(u32 reg);
 
 
 /**
@@ -50,12 +50,12 @@ void hcdi_init();
 /**
  * Enqueue a transfer descriptor.
  */
-u8 hcdi_enqueue(const struct usb_transfer_descriptor *td);
+u8 hcdi_enqueue(const struct usb_transfer_descriptor *td, u32 reg);
 /**
  * Remove an transfer descriptor from transfer queue.
  */
-u8 hcdi_dequeue(struct usb_transfer_descriptor *td);
+u8 hcdi_dequeue(struct usb_transfer_descriptor *td, u32 reg);
 
-void hcdi_fire(void);
+void hcdi_fire(u32 reg);
 
 #endif /* __HOST_H */

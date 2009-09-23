@@ -49,6 +49,7 @@ inline static void wait_ms(int ms)
 struct usb_device {
 	u8 address;
 	u8 fullspeed;
+	u32 ohci;
 
 	/* device descriptor */
 	u8 bLength;
@@ -188,12 +189,12 @@ struct usb_core {
 	struct list *devices;
 } core;
 
-void usb_init();
+void usb_init(u32 reg);
 void usb_periodic();
 u8 usb_next_address();
 
 
-struct usb_device *usb_add_device(u8 lowspeed);
+struct usb_device *usb_add_device(u8 lowspeed, u32 reg);
 u8 usb_remove_device(struct usb_device *dev);
 u8 usb_register_driver(struct usb_driver *driver);
 void usb_probe_driver();

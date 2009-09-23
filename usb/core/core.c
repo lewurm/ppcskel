@@ -45,12 +45,12 @@
 /**
  * Initialize USB stack.
  */
-void usb_init()
+void usb_init(u32 reg)
 {
 	core.drivers = list_create();
 	core.devices = list_create();
 	core.nextaddress = 1;
-	hcdi_init();
+	hcdi_init(reg);
 }
 
 /**
@@ -86,7 +86,7 @@ void usb_periodic()
  * for the core. usb_add_device expected that
  * the device answers to address zero.
  */
-struct usb_device *usb_add_device(u8 lowspeed)
+struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 {
 	struct usb_device *dev = (struct usb_device *) malloc(sizeof(struct usb_device));
 	dev->conf = (struct usb_conf *) malloc(sizeof(struct usb_conf));
@@ -96,6 +96,7 @@ struct usb_device *usb_add_device(u8 lowspeed)
 	 * 64 bytes for fullspeed
 	 */
 	dev->bMaxPacketSize0 = lowspeed ? 8 : 64;
+	dev->ohci = reg;
 
 	dev->epSize[0] = 64;
 	dev->epSize[1] = 64;
@@ -362,7 +363,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 		togl = togl ? 0 : 1;
 
 		/**** send token ****/
-		hcdi_enqueue(td);
+		hcdi_enqueue(td, irp->dev->ohci);
 
 		/***************** Data Stage ***********************/
 		/**
@@ -420,7 +421,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 				}
 
 				/**** send token ****/
-				hcdi_enqueue(td);
+				hcdi_enqueue(td, irp->dev->ohci);
 
 				/* pruefe ob noch weitere Pakete vom Device abgeholt werden muessen */
 				restlength = restlength - irp->epsize;
@@ -447,7 +448,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 			td->pid = USB_PID_IN;
 		}
 		/**** send token ****/
-		hcdi_enqueue(td);
+		hcdi_enqueue(td, irp->dev->ohci);
 		free(td);
 		break;
 
@@ -489,7 +490,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 			else
 				togl = 0;
 				/**** send token ****/
-			hcdi_enqueue(td);
+			hcdi_enqueue(td, irp->dev->ohci);
 			free(td);
 		}
 		/* next togl */
@@ -500,7 +501,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 
 		break;
 	}
-	hcdi_fire();
+	hcdi_fire(irp->dev->ohci);
 
 	return 1;
 }

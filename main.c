@@ -26,6 +26,7 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "console.h"
 #include "irq.h"
 #include "usb/core/core.h"
+#include "hollywood.h"
 
 #define MINIMUM_MINI_VERSION 0x00010001
 
@@ -113,7 +114,8 @@ int main(void)
 			; // better ideas welcome!
 	}
 
-	usb_init();
+	usb_init(OHCI0_REG_BASE);
+	usb_init(OHCI1_REG_BASE);
 
 	/*
     print_str_noscroll(112, 112, "ohai, world!\n");

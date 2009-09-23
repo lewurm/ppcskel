@@ -114,11 +114,11 @@ void irq_handler(void)
 			//sdhc_irq();
 		}
 		if (hw_flags & IRQF_OHCI0) {
-			hcdi_irq();
+			hcdi_irq(OHCI0_REG_BASE);
 			write32(HW_PPCIRQFLAG, IRQF_OHCI0);
 		}
 		if (hw_flags & IRQF_OHCI1) {
-			//TODO: ohci1_irq();
+			hcdi_irq(OHCI1_REG_BASE);
 			write32(HW_PPCIRQFLAG, IRQF_OHCI1);
 		}
 
