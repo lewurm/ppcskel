@@ -2,9 +2,8 @@
 	ppcskel - a Free Software replacement for the Nintendo/BroadOn IOS.
 	IRQ support
 
-Copyright (C) 2008, 2009	Hector Martin "marcan" <marcan@marcansoft.com>
-Copyright (C) 2008, 2009	Sven Peter <svenpeter@gmail.com>
-Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
+Copyright (C) 2009		Bernhard Urban <lewurm@gmx.net>
+Copyright (C) 2009		Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 
 # This code is licensed to you under the terms of the GNU GPL, version 2;
 # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
@@ -15,6 +14,7 @@ Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
 #include "ipc.h"
 #include "bootmii_ppc.h"
 #include "usb/host/host.h"
+#include "mini_ipc.h"
 
 void show_frame_no(void);
 
@@ -61,9 +61,9 @@ void irq_handler(void)
 
 	if (flags & (1<<BW_PI_IRQ_RESET)) { 
 		write32(BW_PI_IRQFLAG, 1<<BW_PI_IRQ_RESET);
-		show_frame_no();
-		printf("IRQ-BW RESET\n");
+		boot2_run(1,2); //sysmenu
 	}
+
 	if (flags & (1<<BW_PI_IRQ_HW)) { //HW-PIC IRQ
 		u32 hw_enabled = read32(HW_PPCIRQMASK);
 		u32 hw_flags = read32(HW_PPCIRQFLAG);

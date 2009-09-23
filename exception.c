@@ -3,6 +3,8 @@
 	Requires mini.
 
 Copyright (C) 2008		Segher Boessenkool <segher@kernel.crashing.org>
+Copyright (C) 2009		Bernhard Urban <lewurm@gmx.net>
+Copyright (C) 2009		Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 
 # This code is licensed to you under the terms of the GNU GPL, version 2;
 # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt

@@ -29,7 +29,6 @@ void usb_hidkb_init()
 	usb_register_driver(&hidkb);
 }
 
-
 void usb_hidkb_probe()
 {
 	struct usb_device *dev;
@@ -41,15 +40,12 @@ void usb_hidkb_probe()
 		if(dev->conf->intf->bInterfaceClass == HID_CLASSCODE &&
 				dev->conf->intf->bInterfaceSubClass == 1 && /* keyboard support boot protocol? */
 				dev->conf->intf->bInterfaceProtocol == 1) { /* keyboard? */
-
-
 			hidkb.data = (void*) dev;
 		}
 
 		iterator=iterator->next;
 	}
 }
-
 
 void usb_hidkb_check()
 {

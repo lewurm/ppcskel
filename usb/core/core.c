@@ -121,7 +121,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 	}
 
-//#define WTF
+#define WTF
 #ifdef WTF
 	printf("lololololool PADDING WTF :O lolololololo \n");
 	printf("lolololool PADDING WTF :O lolololololo \n");
