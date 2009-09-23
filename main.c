@@ -146,8 +146,12 @@ int main(void)
 				y=20;
 			}
 			if((k->keys[i] >= 4) && k->keys[i] <= 4+'z'-'a') {
-				str[j] = k->keys[i] - 4 + 'a';
-			} 
+				str[j] = k->keys[i] - 4 + (k->mod & MOD_lshift || k->mod & MOD_rshift ? 'A' : 'a');
+			} else if ((k->keys[i] >= 0x1e) && (k->keys[i] <= 0x26)) {
+				str[j] = k->keys[i] - 0x1e + '1';
+			} else if (k->keys[i] == 0x27) {
+				str[j] = '0';
+			}
 			else if (k->keys[i] == 0x28) {
 				y += 15;
 				x = 20;
