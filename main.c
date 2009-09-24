@@ -189,6 +189,7 @@ int main(void)
 				y = STDOUT_BORDER_TOP;
 			}
 		}
+		free(k);
 		if(j > 0) { /* when there was any printable stuff, show it */
 			print_str_noscroll(old_x, old_y, str);
 			printf("y: %d\n", y);
