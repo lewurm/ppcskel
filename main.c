@@ -148,7 +148,7 @@ int main(void)
 	struct kbrep *k;
 
 	while(1) {
-		memset(str, '\0', 8);
+		memset(str, '\0', 7);
 		j=0;
 		k = usb_hidkb_getChars();
 		old_x = x; /* save actual x and y position for printing after the loop */
