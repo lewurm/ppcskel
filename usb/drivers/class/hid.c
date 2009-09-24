@@ -24,6 +24,28 @@ struct usb_driver hidkb = {
 	.data	  = NULL
 };
 
+/*
+ * just using two very simple US layout code translation tables that
+ * are sufficient for providing a getc() C standard library call;
+ * the only non-printable character here in this table is ESCAPE which
+ * has index 0x29 and is zero
+ */
+unsigned char code_translation_table[2][57] = {
+	{ /* unshifted */
+	 0,   0,   0,   0,  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+	'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2',
+	'3', '4', '5', '6', '7', '8', '9', '0', '\n', 0,  '\r','\t',' ', '-', '=', '[',
+	']', '\\','\\',';', '\'','`', ',', '.', '/'
+	},
+	{ /* shifted */
+	 0,   0,   0,   0,  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+	'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@',
+	'#', '$', '%', '^', '&', '*', '(', ')', '\n', 0,  '\r','\t',' ', '_', '+', '{',
+	'}', '|', '|', ':', '\"','~', '<', '>', '?'
+	}
+};
+
+
 void usb_hidkb_init()
 {
 	usb_register_driver(&hidkb);
@@ -72,3 +94,10 @@ struct kbrep *usb_hidkb_getChars() {
 	return ret;
 }
 
+unsigned char usb_hidkb_get_char_from_keycode(u8 keycode, int shifted)
+{
+	unsigned char result = 0;
+	if (keycode < 57)
+		result = code_translation_table[!!shifted][keycode];
+	return result;
+}

@@ -34,6 +34,7 @@ void usb_hidkb_init();
 u8 usb_hidkb_inuse();
 
 struct kbrep *usb_hidkb_getChars();
+unsigned char usb_hidkb_get_char_from_keycode(u8 keycode, int shifted);
 
 #endif /* __HID_H */
 

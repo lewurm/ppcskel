@@ -134,43 +134,66 @@ int main(void)
 	}
 	while(!usb_hidkb_inuse());
 
+#define FONT_WIDTH  13
+#define FONT_HEIGHT 15
+#define STDOUT_BORDER_LEFT 20
+#define STDOUT_BORDER_RIGHT 650
+#define STDOUT_BORDER_TOP 20
+#define STDOUT_BORDER_BOTTOM 550
+#define TABSIZE 4
 	/* you are welcome to make this nice :) */
 	char str[7];
-	u16 i, j, y=20, x=20;
+	u16 i, j, y=STDOUT_BORDER_TOP, x=STDOUT_BORDER_LEFT;
+	u16 old_x, old_y;
 	struct kbrep *k;
 
 	while(1) {
 		memset(str, '\0', 8);
 		j=0;
 		k = usb_hidkb_getChars();
+		old_x = x; /* save actual x and y position for printing after the loop */
+		old_y = y;
 		for(i=0; k->keys[i]>0; i++) {
-			if(x>650) {
-				x = 20;
-				y += 15;
+			unsigned char key = usb_hidkb_get_char_from_keycode(k->keys[i],
+					(k->mod & MOD_lshift) || (k->mod & MOD_rshift));
+			/* no key or key not relevant? next, please. */
+			if (key == 0)
+				continue;
+
+			/* RETURN pressed? */
+			if (key == '\n') {
+				x = STDOUT_BORDER_LEFT;
+				y += FONT_HEIGHT;
+			/* TAB pressed? */
+			} else if (key == '\t') {
+				x += (TABSIZE*FONT_WIDTH);
+
+			/* BACKSPACE pressed? */
+			} else if (key == '\r') {
+				/* TODO */
+
+			/* now we have only printable characters left */
+			} else {
+				x += FONT_WIDTH;
+				str[j] = key;
+				j++;
 			}
-			if(y>440) {
-				y=20;
+
+			/* line full? break! */
+			if(x > (STDOUT_BORDER_RIGHT-FONT_WIDTH)) {
+				x = STDOUT_BORDER_LEFT;
+				y += FONT_HEIGHT;
 			}
-			if((k->keys[i] >= 4) && k->keys[i] <= 4+'z'-'a') {
-				str[j] = k->keys[i] - 4 + (k->mod & MOD_lshift || k->mod & MOD_rshift ? 'A' : 'a');
-			} else if ((k->keys[i] >= 0x1e) && (k->keys[i] <= 0x26)) {
-				str[j] = k->keys[i] - 0x1e + '1';
-			} else if (k->keys[i] == 0x27) {
-				str[j] = '0';
+			/* screen full? start again at top */
+			if(y > (STDOUT_BORDER_BOTTOM-FONT_HEIGHT)) {
+				y = STDOUT_BORDER_TOP;
 			}
-			else if (k->keys[i] == 0x28) {
-				y += 15;
-				x = 20;
-			}
-			j++;
 		}
-		if(j > 0) {
-			print_str_noscroll(x, y, str);
+		if(j > 0) { /* when there was any printable stuff, show it */
+			print_str_noscroll(old_x, old_y, str);
 			printf("y: %d\n", y);
 		}
-		while(j--) {
-			x += 13;
-		}
+
 	}
 
 #if 0
