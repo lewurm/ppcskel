@@ -66,10 +66,19 @@ void usb_hidkb_probe()
 				dev->conf->intf->bInterfaceSubClass == 1 && /* keyboard support boot protocol? */
 				dev->conf->intf->bInterfaceProtocol == 1) { /* keyboard? */
 			hidkb.data = (void*) dev;
+			usb_hidkb_set_idle(dev, 1);
 		}
 
 		iterator=iterator->next;
 	}
+}
+
+void usb_hidkb_set_idle(struct usb_device *dev, u8 duration) {
+#define SET_IDLE 0x0A
+	u8 buf[8];
+	memset(buf, 0, 8);
+	usb_control_msg(dev, 0x21, SET_IDLE, (duration << 8), 0, 0, buf, 0);
+	hexdump((void*) buf, 8);
 }
 
 void usb_hidkb_check()
@@ -88,16 +97,18 @@ struct kbrep *usb_hidkb_getChars() {
 	memset(ret, 0, 8);
 	s8 epnum = dev->conf->intf->endp->bEndpointAddress & 0xf;
 	(void) usb_interrupt_read(dev, epnum, (u8*) ret, 8, 0);
+#if 0
 	printf("============\nusb_interrupt_read:\n");
 	hexdump((void*)ret, 8);
-
+#endif
 	return ret;
 }
 
 unsigned char usb_hidkb_get_char_from_keycode(u8 keycode, int shifted)
 {
 	unsigned char result = 0;
-	if (keycode < 57)
+	if (keycode >= 0x3 && keycode < 57) {
 		result = code_translation_table[!!shifted][keycode];
+	}
 	return result;
 }

@@ -145,17 +145,33 @@ int main(void)
 #define TABSIZE 4
 	/* you are welcome to make this nice :) */
 	char str[7];
-	u16 i, j, y=STDOUT_BORDER_TOP, x=STDOUT_BORDER_LEFT;
+	u16 i, j, ret=0, y=STDOUT_BORDER_TOP, x=STDOUT_BORDER_LEFT;
 	u16 old_x, old_y;
-	struct kbrep *k;
+	struct kbrep *k, *old=NULL;
 
 	while(1) {
 		memset(str, '\0', 7);
-		j=0;
 		k = usb_hidkb_getChars();
+		j=0;
 		old_x = x; /* save actual x and y position for printing after the loop */
 		old_y = y;
 		for(i=0; k->keys[i]>0; i++) {
+
+			/* dropping char's if necessary */
+			if(old) {
+				for(j=0; j < 6; j++) {
+					if(old->keys[j] == k->keys[i]) {
+						ret = 1;
+						break;
+					}
+				}
+			}
+			if(ret) {
+				ret = 0;
+				continue;
+			}
+			j = 0;
+
 			unsigned char key = usb_hidkb_get_char_from_keycode(k->keys[i],
 					(k->mod & MOD_lshift) || (k->mod & MOD_rshift));
 			/* no key or key not relevant? next, please. */
@@ -166,9 +182,11 @@ int main(void)
 			if (key == '\n') {
 				x = STDOUT_BORDER_LEFT;
 				y += FONT_HEIGHT;
+				printf("\n");
 			/* TAB pressed? */
 			} else if (key == '\t') {
 				x += (TABSIZE*FONT_WIDTH);
+				printf("\t");
 
 			/* BACKSPACE pressed? */
 			} else if (key == '\r') {
@@ -191,12 +209,14 @@ int main(void)
 				y = STDOUT_BORDER_TOP;
 			}
 		}
-		free(k);
+		if(old) {
+			free(old);
+		}
+		old = k;
 		if(j > 0) { /* when there was any printable stuff, show it */
 			print_str_noscroll(old_x, old_y, str);
-			printf("y: %d\n", y);
+			printf("%s", str);
 		}
-
 	}
 
 #if 0
