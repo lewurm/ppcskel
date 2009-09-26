@@ -128,6 +128,7 @@ int main(void)
 	/* load HID keyboard driver */
 	usb_hidkb_init();
 
+wait_kb:
 	/* wait for usb keyboard plugged in */
 	if(!usb_hidkb_inuse()) {
 		print_str("plug in an usb keyboard", 23);
@@ -149,7 +150,7 @@ int main(void)
 	u16 old_x, old_y;
 	struct kbrep *k, *old=NULL;
 
-	while(1) {
+	while(usb_hidkb_inuse()) {
 		memset(str, '\0', 7);
 		k = usb_hidkb_getChars();
 		j=0;
@@ -218,6 +219,8 @@ int main(void)
 			printf("%s", str);
 		}
 	}
+
+	goto wait_kb;
 
 #if 0
 	printf("===============================\n");

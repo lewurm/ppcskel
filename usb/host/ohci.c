@@ -34,7 +34,7 @@ Copyright (C) 2009     Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 static struct general_td *allocate_general_td();
 static void dbg_op_state(u32 reg);
 static void configure_ports(u8 from_init, u32 reg);
-static void setup_port(u32 ohci, u32 reg, u8 from_init);
+static struct usb_device *setup_port(u32 ohci, u32 reg, u8 pport, u8 from_init);
 static void set_target_hcca(u32 reg);
 
 static struct ohci_hcca hcca_oh0;
@@ -498,6 +498,7 @@ void hcdi_init(u32 reg)
 	dbg_op_state(reg);
 }
 
+static struct usb_device *connected[2] = {NULL, NULL};
 static void configure_ports(u8 from_init, u32 reg)
 {
 #ifdef _DU_OHCI_RH
@@ -509,14 +510,31 @@ static void configure_ports(u8 from_init, u32 reg)
 	printf("OHCI_HC_RH_PORT_STATUS_2:\t0x%08X\n", read32(reg+OHCI_HC_RH_PORT_STATUS_2));
 #endif
 
-	setup_port(reg, reg+OHCI_HC_RH_PORT_STATUS_1, from_init);
-	setup_port(reg, reg+OHCI_HC_RH_PORT_STATUS_2, from_init);
+	struct usb_device *dtmp;
+	if(!(dtmp = setup_port(reg, reg+OHCI_HC_RH_PORT_STATUS_1, 0, from_init))) {
+		if(connected[0]) {
+			usb_remove_device(connected[0]);
+			connected[0] = NULL;
+		}
+	} else {
+		connected[0] = dtmp;
+	}
+
+	if(!(dtmp = setup_port(reg, reg+OHCI_HC_RH_PORT_STATUS_2, 1, from_init))) {
+		if(connected[1]) {
+			usb_remove_device(connected[1]);
+			connected[1] = NULL;
+		}
+	} else {
+		connected[1] = dtmp;
+	}
+
 #ifdef _DU_OHCI_RH
 	printf("configure_ports done\n");
 #endif
 }
 
-static void setup_port(u32 ohci, u32 reg, u8 from_init)
+static struct usb_device *setup_port(u32 ohci, u32 reg, u8 pport, u8 from_init)
 {
 	u32 port = read32(reg);
 	if((port & RH_PS_CCS) && ((port & RH_PS_CSC) || from_init)) {
@@ -530,7 +548,7 @@ static void setup_port(u32 ohci, u32 reg, u8 from_init)
 #ifdef _DU_OHCI_RH
 			printf("fu\n");
 #endif
-			return;
+			return NULL;
 		}
 
 		write32(reg, RH_PS_PRS);
@@ -542,8 +560,12 @@ static void setup_port(u32 ohci, u32 reg, u8 from_init)
 #endif
 
 		/* returns usb_device struct */
-		(void) usb_add_device((read32(reg) & RH_PS_LSDA) >> 8, ohci);
+		return usb_add_device((read32(reg) & RH_PS_LSDA) >> 8, ohci);
 	}
+	if(port & RH_PS_CCS) {
+		return connected[pport];
+	}
+	return NULL;
 }
 
 void hcdi_irq(u32 reg)

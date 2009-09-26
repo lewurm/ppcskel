@@ -120,8 +120,8 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	if(ret < 0) {
 		return (void*) -1;
 	}
-
-#define WTF
+//
+//#define WTF
 #ifdef WTF
 	volatile u8 wzf = 11;
 	if(0 == wzf) {
@@ -232,12 +232,27 @@ void lsusb(struct usb_device *dev)
  * Find currently detached device and remove
  * data structures
  */
-u8 usb_remove_device(struct usb_device * dev)
+u8 usb_remove_device(struct usb_device *dev)
 {
-	// FIXME!!!! dieser quatsch ist nur temporaer
-	free(core.devices->head);
-	free(core.devices);
-	core.devices = list_create();
+	/* trigger driver for this device */
+	struct usb_driver *drv;
+	struct element *iterator = core.drivers->head;
+	while (iterator != NULL) {
+		drv = (struct usb_driver *) iterator->data;
+		if(drv->data && !memcmp(drv->data, dev, sizeof(struct usb_device))) {
+			drv->remove();
+			break;
+		}
+		iterator = iterator->next;
+	}
+
+	/* remove from device list */
+	struct element *tmp = (struct element *) malloc(sizeof(struct element));
+	tmp->data = (void *) dev;
+	list_delete_element(core.devices, tmp);
+
+	printf("REMOVED\n");
+
 	return 1;
 }
 

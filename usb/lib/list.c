@@ -34,6 +34,8 @@
 //#include <stdlib.h>
 #include "list.h"
 #include "../../malloc.h"
+#include "../../string.h"
+#include "../../bootmii_ppc.h"
 
 struct list* list_create()
 {
@@ -53,7 +55,7 @@ u8 list_add_tail(struct list *l, struct element *e)
 	}
 
 	/* find last element */
-	struct element * iterator = l->head;
+	struct element *iterator = l->head;
 
 	while(iterator->next!=NULL) {
 		iterator = iterator->next;
@@ -65,9 +67,36 @@ u8 list_add_tail(struct list *l, struct element *e)
 
 
 
-// FIXME: untested and unused!! 
+// FIXME: untested
 u8 list_delete_element(struct list *l, struct element *e)
 {
+	struct element *iterator = l->head;
+	struct element *delete = NULL;
+
+	if(!l->head) {
+		return 0;
+	} else {
+		if(l->head->data && !(memcmp(l->head->data, e->data, sizeof(struct element)))) {
+			delete = l->head;
+			l->head = NULL;
+		}
+	}
+
+	while(iterator->next!=NULL) {
+		if(iterator->next->data && !(memcmp(iterator->next->data, e->data, sizeof(struct element)))) {
+			delete = iterator->next;
+			iterator->next = iterator->next->next;
+			break;
+		}
+
+		iterator = iterator->next;
+	} 
+
+	if(delete) {
+		free(delete->data);
+		free(delete);
+	}
+	
 	return 1;
 }
 

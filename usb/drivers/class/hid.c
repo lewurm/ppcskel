@@ -21,6 +21,7 @@ struct usb_driver hidkb = {
 	.name	  = "hidkb",
 	.probe  = usb_hidkb_probe,
 	.check  = usb_hidkb_check,
+	.remove = usb_hidkb_remove,
 	.data	  = NULL
 };
 
@@ -88,6 +89,10 @@ void usb_hidkb_check()
 u8 usb_hidkb_inuse()
 {
 	return hidkb.data ? 1 : 0;
+}
+
+void usb_hidkb_remove() {
+	hidkb.data = NULL;
 }
 
 struct kbrep *usb_hidkb_getChars() {
