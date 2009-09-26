@@ -127,6 +127,7 @@ struct endpoint_descriptor {
 
 	/* required by software */
 	u32 tdcount;
+	u8 type;
 } ALIGNED(16);
 
 #define	OHCI_ENDPOINT_ADDRESS_MASK				0x0000007f

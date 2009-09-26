@@ -155,12 +155,33 @@ void hcdi_fire(u32 reg)
 	if(edhead == 0)
 		return;
 
+	u8 itmp;
+	switch(edhead->type) {
+		case USB_CTRL:
 #ifdef _USE_C_Q
-	/* quirk... 11ms seems to be a minimum :O */
-	udelay(11000);
+			/* quirk... 11ms seems to be a minimum :O */
+			udelay(11000);
 #endif
+			write32(reg+OHCI_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
+		break;
 
-	write32(reg+OHCI_HC_CTRL_HEAD_ED, virt_to_phys(edhead));
+		case USB_INTR:
+			//udelay(11000);
+			set_target_hcca(reg);
+			sync_before_read(hcca, sizeof(struct ohci_hcca));
+			for(itmp = 0; itmp < NUM_INITS; itmp++) {
+				hcca->int_table[itmp] = LE(virt_to_phys(edhead));
+			}
+			sync_after_write(hcca, sizeof(struct ohci_hcca));
+		break;
+
+		case USB_BULK:
+			write32(reg+OHCI_HC_BULK_HEAD_ED, virt_to_phys(edhead));
+		break;
+
+		case USB_ISOC:
+		break;
+	}
 
 	/* sync it all */
 	sync_after_write(edhead, sizeof(struct endpoint_descriptor));
@@ -184,9 +205,28 @@ void hcdi_fire(u32 reg)
 		x = phys_to_virt(LE(x->nexttd));
 	}
 
-	/* trigger control list */
-	set32(reg+OHCI_HC_CONTROL, OHCI_CTRL_CLE);
-	write32(reg+OHCI_HC_COMMAND_STATUS, OHCI_CLF);
+	/* start transfer */
+	switch(edhead->type) {
+		case USB_CTRL:
+			/* trigger control list */
+			set32(reg+OHCI_HC_CONTROL, OHCI_CTRL_CLE);
+			write32(reg+OHCI_HC_COMMAND_STATUS, OHCI_CLF);
+			break;
+
+		case USB_INTR:
+			/* trigger periodic list */
+			set32(reg+OHCI_HC_CONTROL, OHCI_CTRL_PLE);
+			break;
+
+		case USB_BULK:
+			/* trigger bulk list */
+			set32(reg+OHCI_HC_CONTROL, OHCI_CTRL_BLE);
+			write32(reg+OHCI_HC_COMMAND_STATUS, OHCI_BLF);
+			break;
+
+		case USB_ISOC:
+			break;
+	}
 
 	struct general_td *n=0, *prev = 0, *next = 0;
 	/* poll until edhead->headp is null */
@@ -282,12 +322,33 @@ void hcdi_fire(u32 reg)
 		free(prev);
 	}
 
-	set_target_hcca(reg);
-	hcca->done_head = 0;
-	sync_after_write(hcca, sizeof(*hcca));
-
 out:
-	write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_CLE);
+	set_target_hcca(reg);
+	sync_before_read(hcca, sizeof(struct ohci_hcca));
+
+	u8 jtmp;
+	switch(edhead->type) {
+		case USB_CTRL:
+			write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_CLE);
+			break;
+
+		case USB_INTR:
+			write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_PLE);
+			for(jtmp = 0; jtmp < NUM_INITS; jtmp++) {
+				hcca->int_table[jtmp] = 0;
+			}
+			break;
+
+		case USB_BULK:
+			write32(reg+OHCI_HC_CONTROL, read32(reg+OHCI_HC_CONTROL)&~OHCI_CTRL_BLE);
+			break;
+
+		case USB_ISOC:
+			break;
+	}
+
+	hcca->done_head = 0;
+	sync_after_write(hcca, sizeof(struct ohci_hcca));
 
 	edhead = 0;
 
@@ -317,6 +378,7 @@ u8 hcdi_enqueue(const struct usb_transfer_descriptor *td, u32 reg) {
 				OHCI_ENDPOINT_SET_ENDPOINT_NUMBER(td->endpoint) |
 				OHCI_ENDPOINT_SET_MAX_PACKET_SIZE(td->maxp));
 		edhead->tdcount = 0;
+		edhead->type = td->type;
 	}
 
 	struct general_td *tdhw = allocate_general_td();

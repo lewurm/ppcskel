@@ -123,7 +123,7 @@ int main(void)
 	usb_init(OHCI0_REG_BASE);
 
 	/* internal ohci */
-	usb_init(OHCI1_REG_BASE);
+	//usb_init(OHCI1_REG_BASE);
 
 	/* load HID keyboard driver */
 	usb_hidkb_init();
@@ -133,6 +133,8 @@ int main(void)
 		print_str("plug in an usb keyboard", 23);
 	}
 	while(!usb_hidkb_inuse());
+
+	print_str("hello keyboard :)", 17);
 
 #define FONT_WIDTH  13
 #define FONT_HEIGHT 15
