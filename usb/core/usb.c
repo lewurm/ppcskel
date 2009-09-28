@@ -118,12 +118,14 @@ s8 usb_reset(struct usb_device *dev)
 s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request,
 		u16 value, u16 index, u16 length, u8 *buf, u16 timeout)
 {
-	struct usb_irp *irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
-	irp->dev = dev;
-	irp->endpoint = 0;
+	static struct usb_irp irp;
+	memset(&irp, 0, sizeof(struct usb_irp));
 
-	irp->epsize = dev->bMaxPacketSize0;
-	irp->type = USB_CTRL;
+	irp.dev = dev;
+	irp.endpoint = 0;
+
+	irp.epsize = dev->bMaxPacketSize0;
+	irp.type = USB_CTRL;
 
 	buf[0]=(u8)requesttype;
 	buf[1]=(u8)request;
@@ -134,12 +136,11 @@ s8 usb_control_msg(struct usb_device *dev, u8 requesttype, u8 request,
 	buf[6]=(u8)(length);
 	buf[7]=(u8)(length >> 8);
 
-	irp->buffer = buf;
-	irp->len = length;
-	irp->timeout = timeout;
+	irp.buffer = buf;
+	irp.len = length;
+	irp.timeout = timeout;
 
-	usb_submit_irp(irp);
-	free(irp);
+	usb_submit_irp(&irp);
 
 	return 0;
 }
@@ -333,7 +334,22 @@ s8 usb_set_altinterface(struct usb_device *dev, u8 alternate)
 	return 0;
 }
 
+static s8 usb_gen_rw(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout, u8 type) {
+	static struct usb_irp irp;
+	memset(&irp, 0, sizeof(struct usb_irp));
 
+	irp.dev = dev;
+	irp.endpoint = ep;
+	irp.epsize = dev->epSize[ep & 0x7F];
+	irp.type = type;
+
+	irp.buffer = buf;
+	irp.len = size;
+	irp.timeout = timeout;
+
+	usb_submit_irp(&irp);
+	return 0;
+}
 
 /******************* Bulk Transfer **********************/
 /**
@@ -341,22 +357,7 @@ s8 usb_set_altinterface(struct usb_device *dev, u8 alternate)
  */
 s8 usb_bulk_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-	struct usb_irp * irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
-	irp->dev = dev;
-	//irp->devaddress = dev->address;
-	
-	irp->endpoint = ep;
-	irp->epsize = dev->epSize[ep]; // ermitteln
-	irp->type = USB_BULK;
-
-	irp->buffer = buf;
-	irp->len = size;
-	irp->timeout = timeout;
-
-	usb_submit_irp(irp);
-	free(irp);
-
-	return 0;
+	return usb_gen_rw(dev, ep, buf, size, timeout, USB_BULK);
 }
 
 /**
@@ -364,22 +365,7 @@ s8 usb_bulk_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
  */
 s8 usb_bulk_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-	struct usb_irp * irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
-	//irp->devaddress = dev->address;
-	irp->dev = dev;
-	
-	irp->endpoint = ep | 0x80;	// from device to host
-	irp->epsize = dev->epSize[ep]; // ermitteln
-	irp->type = USB_BULK;
-
-	irp->buffer = buf;
-	irp->len = size;
-	irp->timeout = timeout;
-
-	usb_submit_irp(irp);
-	free(irp);
-
-	return 0;
+	return usb_gen_rw(dev, ep|0x80, buf, size, timeout, USB_BULK);
 }
 
 
@@ -389,7 +375,7 @@ s8 usb_bulk_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
  */
 s8 usb_interrupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-	return 0;
+	return usb_gen_rw(dev, ep, buf, size, timeout, USB_INTR);
 }
 
 /**
@@ -397,20 +383,7 @@ s8 usb_interrupt_write(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeo
  */
 s8 usb_interrupt_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout)
 {
-	struct usb_irp *irp = (struct usb_irp*)malloc(sizeof(struct usb_irp));
-	irp->dev = dev;
-	irp->endpoint = ep; //wtf? |80; //from device to host
-	irp->epsize = dev->epSize[ep]; // ermitteln
-	irp->type = USB_INTR;
-
-	irp->buffer = buf;
-	irp->len = size;
-	irp->timeout = timeout;
-
-	usb_submit_irp(irp);
-	free(irp);
-
-	return 0;
+	return usb_gen_rw(dev, ep|0x80, buf, size, timeout, USB_INTR);
 }
 
 
@@ -435,5 +408,3 @@ s8 usb_isochron_read(struct usb_device *dev, u8 ep, u8 *buf, u8 size, u8 timeout
 	return 0;
 }
 
-
-//#endif	//_USB_H_

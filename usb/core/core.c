@@ -120,7 +120,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 	if(ret < 0) {
 		return (void*) -1;
 	}
-//
+
 //#define WTF
 #ifdef WTF
 	volatile u8 wzf = 11;
@@ -440,62 +440,13 @@ u16 usb_submit_irp(struct usb_irp *irp)
 		break;
 
 	case USB_BULK:
-		//u8 runloop=1;
-		//u16 restlength = irp->len;
-		//char * td_buf_ptr=irp->buffer;
-
-		/* schleife die die tds generiert */
-		while (runloop) {
-			td = usb_create_transfer_descriptor(irp);
-			td->endpoint = td->endpoint & 0x7F;				/* clear direction bit */
-
-			/* max packet size for given endpoint */
-			td->actlen = irp->epsize;
-
-			/* Generate In Packet  */
-			if (irp->endpoint & 0x80)
-				td->pid = USB_PID_IN;
-			else
-				/* Generate Out Packet */
-				td->pid = USB_PID_OUT;
-
-			/* stop loop if all bytes are send */
-			if (restlength <= irp->epsize) {
-				runloop = 0;
-				td->actlen = restlength;
-			}
-
-			td->buffer = td_buf_ptr;
-			/* move pointer for next packet */
-			td_buf_ptr = td_buf_ptr + irp->epsize;
-
-			td->togl = togl;
-			togl = togl ? 0 : 1;
-				/**** send token ****/
-			hcdi_enqueue(td, irp->dev->ohci);
-			free(td);
-		}
-		/* next togl */
-		//if(td->pid == USB_PID_OUT) {
-		//if(togl==0) togl=1; else togl=0;
-		//}
-		irp->dev->epTogl[(irp->endpoint & 0x7F)] = togl;
-
-		break;
-	
 	case USB_INTR:
-		//u8 runloop=1;
-		//u16 restlength = irp->len;
-		//char * td_buf_ptr=irp->buffer;
-
-		/* schleife die die tds generiert */
 		while (runloop && (restlength > 0)) {
 			td = usb_create_transfer_descriptor(irp);
 			/* max packet size for given endpoint */
 			td->actlen = irp->epsize;
 
-			td->pid = USB_PID_IN;
-			/* TODO: USB_PID_OUT */
+			td->pid = irp->endpoint & 0x80 ? USB_PID_IN : USB_PID_OUT;
 
 			/* stop loop if all bytes are send */
 			if (restlength < irp->epsize) {
@@ -534,7 +485,7 @@ struct usb_transfer_descriptor *usb_create_transfer_descriptor(struct usb_irp * 
 			(struct usb_transfer_descriptor *) malloc(sizeof(struct usb_transfer_descriptor));
 
 	td->devaddress = irp->dev->address;
-	td->endpoint = irp->endpoint;
+	td->endpoint = irp->endpoint & 0x7F;
 	td->iso = 0;
 	td->state = USB_TRANSFER_DESCR_NONE;
 	td->maxp = irp->epsize;
