@@ -112,6 +112,7 @@ struct usb_device_request_t
 	unsigned short wValue;
 	unsigned short wIndex;	
 	unsigned short wLength;
+	u8 *payload;
 };
 
 /*-------------------------------------------

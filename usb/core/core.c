@@ -121,7 +121,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 	}
 
-#define WTF
+//#define WTF
 #ifdef WTF
 	volatile u8 wzf = 11;
 	if(0 == wzf) {
@@ -379,7 +379,13 @@ u16 usb_submit_irp(struct usb_irp *irp)
 		free(td);
 
 		/* check bit 7 of bmRequestType */
-		if (bmRequestType & 0x80) { 
+		if (bmRequestType & 0x80 || bmRequestType & 0x20) { 
+			if(bmRequestType & 0x20) {
+				/*
+				restlength -= 8;
+				*/
+				td_buf_ptr += 8;
+			}
 			/* schleife die die tds generiert */
 			while (runloop && (restlength > 0)) {
 				td = usb_create_transfer_descriptor(irp);
@@ -394,7 +400,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 				/* move pointer for next packet */
 				td_buf_ptr += irp->epsize;
 
-				td->pid = USB_PID_IN;
+				td->pid = bmRequestType & 0x80 ? USB_PID_IN : USB_PID_OUT;
 				td->togl = togl;
 				togl = togl ? 0 : 1;
 
@@ -411,7 +417,7 @@ u16 usb_submit_irp(struct usb_irp *irp)
 				hcdi_enqueue(td, irp->dev->ohci);
 
 				/* pruefe ob noch weitere Pakete vom Device abgeholt werden muessen */
-				restlength = restlength - irp->epsize;
+				restlength -= irp->epsize;
 				free(td);
 			}
 		}
