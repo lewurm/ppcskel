@@ -121,7 +121,7 @@ struct usb_device *usb_add_device(u8 lowspeed, u32 reg)
 		return (void*) -1;
 	}
 
-//#define WTF
+#define WTF
 #ifdef WTF
 	volatile u8 wzf = 11;
 	if(0 == wzf) {
@@ -420,7 +420,8 @@ u16 usb_submit_irp(struct usb_irp *irp)
 		/***************** Status Stage ***********************/
 		/* Zero packet for end */
 		td = usb_create_transfer_descriptor(irp);
-		td->togl = 1;								/* zero data packet = always DATA1 packet */
+		/* zero data packet = always DATA1 packet */
+		td->togl = 1;
 		td->actlen = 0;
 		td->buffer = NULL;
 

@@ -146,7 +146,7 @@ struct usb_driver {
 	void (*probe)(void);
 	void (*check)(void);
 	void (*remove)(void);
-	void *data;
+	struct usb_device *data;
 	struct usb_driver *next;
 };
 

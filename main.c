@@ -27,6 +27,7 @@ Copyright (C) 2009              John Kelley <wiidev@kelley.ca>
 #include "irq.h"
 #include "usb/core/core.h"
 #include "usb/drivers/class/hid.h"
+#include "usb/drivers/bt.h"
 #include "sha1.h"
 #include "hollywood.h"
 
@@ -93,7 +94,7 @@ int main(void)
 	/* external ohci */
 	irq_hw_enable(IRQ_OHCI0);
 	/* internal ohci */
-	//irq_hw_enable(IRQ_OHCI1);
+	irq_hw_enable(IRQ_OHCI1);
 
 	ipc_initialize();
 	ipc_slowping();
@@ -123,10 +124,13 @@ int main(void)
 	usb_init(OHCI0_REG_BASE);
 
 	/* internal ohci */
-	//usb_init(OHCI1_REG_BASE);
+	usb_init(OHCI1_REG_BASE);
 
 	/* load HID keyboard driver */
 	usb_hidkb_init();
+
+	/* load BT-USB driver */
+	usb_bt_init();
 
 wait_kb:
 	/* wait for usb keyboard plugged in */

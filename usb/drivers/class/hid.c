@@ -66,7 +66,7 @@ void usb_hidkb_probe()
 		if(dev->conf->intf->bInterfaceClass == HID_CLASSCODE &&
 				dev->conf->intf->bInterfaceSubClass == 1 && /* keyboard support boot protocol? */
 				dev->conf->intf->bInterfaceProtocol == 1) { /* keyboard? */
-			hidkb.data = (void*) dev;
+			hidkb.data = dev;
 			usb_hidkb_set_idle(dev, 1);
 		}
 
